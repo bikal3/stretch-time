@@ -14,8 +14,17 @@ flutter test                 # timer logic tests
 
 ```sh
 flutter build web --release  # output: build/web — upload to any static host (Netlify, GitHub Pages, Cloudflare Pages)
-flutter build apk --release  # Android APK  (Play Store: flutter build appbundle)
+flutter build apk --release  # Android APK, debug-signed (Play Store needs a release key + flutter build appbundle)
 flutter build ipa            # iOS (needs an Apple Developer account for signing)
+```
+
+Install on your own devices:
+
+```sh
+# Android: download the APK from GitHub Releases, or with a phone on USB debugging:
+flutter install --release
+# iPhone: update in place (keeps saved workouts; `flutter install` uninstalls first)
+flutter build ios --release && xcrun devicectl device install app --device <UDID> build/ios/iphoneos/Runner.app
 ```
 
 App icons come from `assets/icon.png`; regenerate with `dart run flutter_launcher_icons`.
