@@ -2,6 +2,34 @@
 
 Interval timer for stretching and workouts — one Flutter codebase for Android, iOS and web.
 
+**[Open the web app](https://bikal3.github.io/stretch-time/)** · **[Download the Android APK (latest release)](https://github.com/bikal3/stretch-time/releases/latest)**
+
+<p>
+  <img src="docs/screenshots/home-light.png" width="200" alt="Home screen, light mode">
+  <img src="docs/screenshots/home-dark.png" width="200" alt="Home screen, dark mode">
+  <img src="docs/screenshots/timer.png" width="200" alt="Timer running a named stretch">
+  <img src="docs/screenshots/settings.png" width="200" alt="Settings with theme, voice and sound options">
+</p>
+
+<img src="docs/screenshots/desktop.png" width="820" alt="Desktop web layout with preset cards">
+
+## Features
+
+- Work / Rest / Exercises / Rounds / Round Reset timer
+- Name each stretch; the timer shows and announces the current and next one
+- Voice cues, beeps and vibration that mix with your music
+- Built-in presets, saved workouts and recent history
+- Light, dark or system theme
+- Desktop web layout with keyboard shortcuts: Space pause, ← → back/skip, Esc end
+
+## Get it
+
+| Platform | How |
+|----------|-----|
+| Web | https://bikal3.github.io/stretch-time/ — on a phone, use *Add to Home Screen* / *Install app* |
+| Android | Download the APK from [Releases](https://github.com/bikal3/stretch-time/releases/latest), open it, allow installs from that source |
+| iPhone | Build from source with Xcode (see below); not on the App Store yet |
+
 ## Run
 
 ```sh
@@ -37,6 +65,6 @@ App icons come from `assets/icon.png`; regenerate with `dart run flutter_launche
 
 - `lib/workout.dart` — workout model, plan builder, timer engine, built-in presets (pure Dart, tested)
 - `lib/app_state.dart` — settings, saved & recent workouts (persisted with shared_preferences)
-- `lib/main.dart` — home screen
+- `lib/main.dart` — home screen (phone and desktop layouts), theme
 - `lib/run_screen.dart` — running timer, voice/sound/vibration cues
 - `lib/sheets.dart` — value editor, presets sheet, exercises editor, settings
