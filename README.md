@@ -2,7 +2,7 @@
 
 Interval timer for stretching and workouts — one Flutter codebase for Android, iOS and web.
 
-**[Open the web app](https://bikal3.github.io/stretch-time/)** · **[Download the Android APK (latest release)](https://github.com/bikal3/stretch-time/releases/latest)**
+**[Open the web app](https://stretch-time.bikal3.com.np/)** · **[Download the Android APK (latest release)](https://github.com/bikal3/stretch-time/releases/latest)**
 
 <p>
   <img src="docs/screenshots/home-light.png" width="200" alt="Home screen, light mode">
@@ -26,7 +26,7 @@ Interval timer for stretching and workouts — one Flutter codebase for Android,
 
 | Platform | How |
 |----------|-----|
-| Web | https://bikal3.github.io/stretch-time/ — on a phone, use *Add to Home Screen* / *Install app* |
+| Web | https://stretch-time.bikal3.com.np/ — on a phone, use *Add to Home Screen* / *Install app* |
 | Android | Download the APK from [Releases](https://github.com/bikal3/stretch-time/releases/latest), open it, allow installs from that source |
 | iPhone | Build from source with Xcode (see below); not on the App Store yet |
 
@@ -47,7 +47,7 @@ flutter build ipa            # iOS (needs an Apple Developer account for signing
 ```
 
 The web app deploys automatically: every push to `main` runs the tests and publishes
-https://bikal3.github.io/stretch-time/ via `.github/workflows/deploy-web.yml`
+https://stretch-time.bikal3.com.np/ via `.github/workflows/deploy-web.yml`
 (re-run it from the Actions tab → Deploy web → Run workflow).
 
 Install on your own devices:
