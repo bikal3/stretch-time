@@ -18,6 +18,10 @@ flutter build apk --release  # Android APK, debug-signed (Play Store needs a rel
 flutter build ipa            # iOS (needs an Apple Developer account for signing)
 ```
 
+The web app deploys automatically: every push to `main` runs the tests and publishes
+https://bikal3.github.io/stretch-time/ via `.github/workflows/deploy-web.yml`
+(re-run it from the Actions tab → Deploy web → Run workflow).
+
 Install on your own devices:
 
 ```sh
