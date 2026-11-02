@@ -251,7 +251,9 @@ void showWorkouts(BuildContext context, AppState app) {
               child: Text(
                 msg,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white60),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           );
@@ -286,12 +288,16 @@ void showWorkouts(BuildContext context, AppState app) {
                         for (final w in app.saved)
                           tile(w, onDelete: () => app.deleteSaved(w)),
                         if (app.saved.isNotEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(16),
+                          Padding(
+                            padding: const EdgeInsets.all(16),
                             child: Text(
                               'Swipe left to delete',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white38),
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
                             ),
                           ),
                       ],
@@ -397,10 +403,12 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Name each stretch so the timer can show and say it. Hold and drag to reorder.',
-                    style: TextStyle(color: Colors.white60),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
                 RepeatButton(
@@ -459,64 +467,143 @@ class SettingsScreen extends StatelessWidget {
         listenable: app,
         builder: (context, _) {
           final s = app.settings;
+          void set(Settings v) => app.updateSettings(v);
+
+          Widget toggle(
+            IconData icon,
+            String title,
+            String sub,
+            bool value,
+            ValueChanged<bool> onChanged,
+          ) => SwitchListTile(
+            secondary: Icon(icon),
+            title: Text(title),
+            subtitle: Text(sub),
+            value: value,
+            onChanged: onChanged,
+          );
+
           return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
-              SwitchListTile(
-                secondary: const Icon(Icons.record_voice_over_outlined),
-                title: const Text('Voice announcements'),
-                subtitle: const Text(
+              _group(context, 'Appearance', [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(
+                          value: 'system',
+                          icon: Icon(Icons.brightness_auto_outlined),
+                          label: Text('System'),
+                        ),
+                        ButtonSegment(
+                          value: 'light',
+                          icon: Icon(Icons.light_mode_outlined),
+                          label: Text('Light'),
+                        ),
+                        ButtonSegment(
+                          value: 'dark',
+                          icon: Icon(Icons.dark_mode_outlined),
+                          label: Text('Dark'),
+                        ),
+                      ],
+                      selected: {s.themeMode},
+                      onSelectionChanged: (v) =>
+                          set(s.copyWith(themeMode: v.first)),
+                    ),
+                  ),
+                ),
+              ]),
+              _group(context, 'Cues', [
+                toggle(
+                  Icons.record_voice_over_outlined,
+                  'Voice announcements',
                   'Says the stretch name, "Rest" and counts down 3, 2, 1',
+                  s.voice,
+                  (v) => set(s.copyWith(voice: v)),
                 ),
-                value: s.voice,
-                onChanged: (v) => app.updateSettings(s.copyWith(voice: v)),
-              ),
-              SwitchListTile(
-                secondary: const Icon(Icons.volume_up_outlined),
-                title: const Text('Sounds'),
-                subtitle: const Text('Beeps at phase changes and countdown'),
-                value: s.sound,
-                onChanged: (v) => app.updateSettings(s.copyWith(sound: v)),
-              ),
-              SwitchListTile(
-                secondary: const Icon(Icons.vibration),
-                title: const Text('Vibration'),
-                subtitle: const Text('On phones that support it'),
-                value: s.vibration,
-                onChanged: (v) => app.updateSettings(s.copyWith(vibration: v)),
-              ),
-              SwitchListTile(
-                secondary: const Icon(Icons.light_mode_outlined),
-                title: const Text('Keep screen on'),
-                subtitle: const Text('During a workout'),
-                value: s.keepAwake,
-                onChanged: (v) => app.updateSettings(s.copyWith(keepAwake: v)),
-              ),
-              const ListTile(
-                leading: Icon(Icons.timer_outlined),
-                title: Text('Get ready countdown'),
-                subtitle: Text(
-                  'Time to get into position before the first exercise',
+                toggle(
+                  Icons.volume_up_outlined,
+                  'Sounds',
+                  'Beeps at phase changes and countdown',
+                  s.sound,
+                  (v) => set(s.copyWith(sound: v)),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: SegmentedButton<int>(
-                  segments: [
-                    for (final v in [0, 3, 5, 10])
-                      ButtonSegment(
-                        value: v,
-                        label: Text(v == 0 ? 'Off' : '${v}s'),
-                      ),
-                  ],
-                  selected: {s.readySecs},
-                  onSelectionChanged: (v) =>
-                      app.updateSettings(s.copyWith(readySecs: v.first)),
+                toggle(
+                  Icons.vibration,
+                  'Vibration',
+                  'On phones that support it',
+                  s.vibration,
+                  (v) => set(s.copyWith(vibration: v)),
                 ),
-              ),
+              ]),
+              _group(context, 'Workout', [
+                toggle(
+                  Icons.screen_lock_portrait_outlined,
+                  'Keep screen on',
+                  'While a workout is running',
+                  s.keepAwake,
+                  (v) => set(s.copyWith(keepAwake: v)),
+                ),
+                const ListTile(
+                  leading: Icon(Icons.timer_outlined),
+                  title: Text('Get ready countdown'),
+                  subtitle: Text(
+                    'Time to get into position before the first exercise',
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<int>(
+                      segments: [
+                        for (final v in [0, 3, 5, 10])
+                          ButtonSegment(
+                            value: v,
+                            label: Text(v == 0 ? 'Off' : '${v}s'),
+                          ),
+                      ],
+                      selected: {s.readySecs},
+                      onSelectionChanged: (v) =>
+                          set(s.copyWith(readySecs: v.first)),
+                    ),
+                  ),
+                ),
+              ]),
             ],
           );
         },
       ),
     ),
   );
+
+  Widget _group(BuildContext context, String title, List<Widget> children) =>
+      Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 8, bottom: 8),
+              child: Text(
+                title.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 13,
+                  letterSpacing: 1.5,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+            Card.filled(
+              margin: EdgeInsets.zero,
+              clipBehavior: Clip.antiAlias,
+              child: Column(children: children),
+            ),
+          ],
+        ),
+      );
 }

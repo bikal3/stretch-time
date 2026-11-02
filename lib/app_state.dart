@@ -8,12 +8,14 @@ import 'workout.dart';
 class Settings {
   final bool sound, vibration, voice, keepAwake;
   final int readySecs;
+  final String themeMode; // 'system' | 'light' | 'dark'
   const Settings({
     this.sound = true,
     this.vibration = true,
     this.voice = true,
     this.keepAwake = true,
     this.readySecs = 5,
+    this.themeMode = 'system',
   });
 
   Settings copyWith({
@@ -22,12 +24,14 @@ class Settings {
     bool? voice,
     bool? keepAwake,
     int? readySecs,
+    String? themeMode,
   }) => Settings(
     sound: sound ?? this.sound,
     vibration: vibration ?? this.vibration,
     voice: voice ?? this.voice,
     keepAwake: keepAwake ?? this.keepAwake,
     readySecs: readySecs ?? this.readySecs,
+    themeMode: themeMode ?? this.themeMode,
   );
 
   Map<String, dynamic> toJson() => {
@@ -36,6 +40,7 @@ class Settings {
     'voice': voice,
     'keepAwake': keepAwake,
     'readySecs': readySecs,
+    'themeMode': themeMode,
   };
 
   factory Settings.fromJson(Map<String, dynamic> j) => Settings(
@@ -44,6 +49,7 @@ class Settings {
     voice: j['voice'] ?? true,
     keepAwake: j['keepAwake'] ?? true,
     readySecs: j['readySecs'] ?? 5,
+    themeMode: j['themeMode'] ?? 'system',
   );
 }
 
