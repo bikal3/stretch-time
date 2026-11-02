@@ -8,6 +8,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'app_state.dart';
+import 'sheets.dart' show isWide;
 import 'workout.dart';
 
 const phaseColors = {
@@ -178,8 +179,30 @@ class _RunScreenState extends State<RunScreen> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) => didPop ? null : confirmStop(),
-      child: engine.done ? doneView() : runView(t),
+      // Keyboard control for the web/desktop.
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.space): togglePause,
+          const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
+              act(engine.skip),
+          const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
+              act(engine.back),
+          const SingleActivator(LogicalKeyboardKey.escape): confirmStop,
+        },
+        child: Focus(
+          autofocus: true,
+          child: engine.done ? doneView() : runView(t),
+        ),
+      ),
     );
+  }
+
+  void togglePause() {
+    if (engine.done) {
+      Navigator.pop(context);
+    } else {
+      act(engine.paused ? engine.resume : engine.pause);
+    }
   }
 
   Widget runView(Duration t) {
@@ -195,107 +218,121 @@ class _RunScreenState extends State<RunScreen> {
       body: DefaultTextStyle.merge(
         style: const TextStyle(color: Colors.white),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                Row(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
                   children: [
-                    IconButton(
-                      iconSize: 30,
-                      color: Colors.white,
-                      tooltip: 'End workout',
-                      onPressed: confirmStop,
-                      icon: const Icon(Icons.close),
+                    Row(
+                      children: [
+                        IconButton(
+                          iconSize: 30,
+                          color: Colors.white,
+                          tooltip: 'End workout',
+                          onPressed: confirmStop,
+                          icon: const Icon(Icons.close),
+                        ),
+                        const Spacer(),
+                        if (seg.phase != Phase.ready)
+                          Text(
+                            'Round ${seg.round}/${w.rounds}',
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                      ],
                     ),
                     const Spacer(),
-                    if (seg.phase != Phase.ready)
+                    Text(
+                      phaseLabels[seg.phase]!.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        letterSpacing: 4,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (seg.phase == Phase.work)
                       Text(
-                        'Round ${seg.round}/${w.rounds}',
+                        w.exerciseName(seg.exercise),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    // Flexible bounds the height so the clock fills big windows without overflowing.
+                    Flexible(
+                      flex: 4,
+                      child: FittedBox(
+                        child: Text(
+                          fmt(engine.secondsLeft(t)),
+                          style: const TextStyle(
+                            fontSize: 150,
+                            fontWeight: FontWeight.w800,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (seg.phase == Phase.work)
+                      Text(
+                        'Exercise ${seg.exercise + 1} of ${w.count}',
                         style: const TextStyle(fontSize: 18),
+                      ),
+                    if (next != null)
+                      Text(next, style: const TextStyle(fontSize: 22)),
+                    const Spacer(),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: 1 - engine.totalLeft(t) / total,
+                        minHeight: 8,
+                        color: Colors.white,
+                        backgroundColor: Colors.black26,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${fmt(engine.totalLeft(t))} remaining',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        roundButton(
+                          Icons.skip_previous_rounded,
+                          'Back',
+                          () => act(engine.back),
+                        ),
+                        roundButton(
+                          engine.paused
+                              ? Icons.play_arrow_rounded
+                              : Icons.pause_rounded,
+                          engine.paused ? 'Resume' : 'Pause',
+                          togglePause,
+                          big: true,
+                        ),
+                        roundButton(
+                          Icons.skip_next_rounded,
+                          'Skip',
+                          () => act(engine.skip),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (isWide(context))
+                      const Text(
+                        'Space  pause / resume   ·   ← →  back / skip   ·   Esc  end',
+                        style: TextStyle(color: Colors.white54),
                       ),
                   ],
                 ),
-                const Spacer(),
-                Text(
-                  phaseLabels[seg.phase]!.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    letterSpacing: 4,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (seg.phase == Phase.work)
-                  Text(
-                    w.exerciseName(seg.exercise),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                FittedBox(
-                  child: Text(
-                    fmt(engine.secondsLeft(t)),
-                    style: const TextStyle(
-                      fontSize: 150,
-                      fontWeight: FontWeight.w800,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ),
-                if (seg.phase == Phase.work)
-                  Text(
-                    'Exercise ${seg.exercise + 1} of ${w.count}',
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                if (next != null)
-                  Text(next, style: const TextStyle(fontSize: 22)),
-                const Spacer(),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: 1 - engine.totalLeft(t) / total,
-                    minHeight: 8,
-                    color: Colors.white,
-                    backgroundColor: Colors.black26,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${fmt(engine.totalLeft(t))} remaining',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    roundButton(
-                      Icons.skip_previous_rounded,
-                      'Back',
-                      () => act(engine.back),
-                    ),
-                    roundButton(
-                      engine.paused
-                          ? Icons.play_arrow_rounded
-                          : Icons.pause_rounded,
-                      engine.paused ? 'Resume' : 'Pause',
-                      () => act(engine.paused ? engine.resume : engine.pause),
-                      big: true,
-                    ),
-                    roundButton(
-                      Icons.skip_next_rounded,
-                      'Skip',
-                      () => act(engine.skip),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
+              ),
             ),
           ),
         ),

@@ -48,6 +48,54 @@ class _RepeatButtonState extends State<RepeatButton> {
   );
 }
 
+/// Desktop-width window: dialogs instead of bottom sheets, centered pages.
+bool isWide(BuildContext context) => MediaQuery.sizeOf(context).width >= 900;
+
+/// Bottom sheet on phones, centered dialog on wide screens.
+void showPanel(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  bool tall = false,
+}) {
+  if (isWide(context)) {
+    showDialog(
+      context: context,
+      builder: (c) => Dialog(
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 24),
+            child: tall
+                ? SizedBox(
+                    height: MediaQuery.sizeOf(c).height * 0.75,
+                    child: builder(c),
+                  )
+                : builder(c),
+          ),
+        ),
+      ),
+    );
+  } else {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: tall,
+      builder: (c) => tall
+          ? FractionallySizedBox(heightFactor: 0.85, child: builder(c))
+          : builder(c),
+    );
+  }
+}
+
+/// Centers and width-limits a page body on wide screens.
+Widget pageBody(Widget child) => Center(
+  child: ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: 720),
+    child: child,
+  ),
+);
+
 /// Bottom sheet that edits one number live: hold-to-repeat −/+ and quick picks.
 void showValueEditor(
   BuildContext context, {
@@ -61,9 +109,8 @@ void showValueEditor(
   required Color color,
   required ValueChanged<int> onChanged,
 }) {
-  showModalBottomSheet(
-    context: context,
-    showDragHandle: true,
+  showPanel(
+    context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) {
         void set(int v) {
@@ -144,129 +191,122 @@ void showValueEditor(
 }
 
 void showWorkouts(BuildContext context, AppState app) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
-    builder: (context) => FractionallySizedBox(
-      heightFactor: 0.85,
-      child: DefaultTabController(
-        length: 3,
-        initialIndex: app.saved.isEmpty ? 0 : 1,
-        child: ListenableBuilder(
-          listenable: app,
-          builder: (context, _) {
-            Widget tile(Workout w, {VoidCallback? onDelete}) {
-              final t = ListTile(
-                title: Text(w.name.isEmpty ? 'Custom workout' : w.name),
-                subtitle: Text(w.summary),
-                onTap: () {
-                  app.load(w);
-                  Navigator.pop(context);
-                },
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      fmt(w.totalSecs),
-                      style: const TextStyle(fontFeatures: _tabular),
-                    ),
-                    IconButton(
-                      tooltip: 'Start now',
-                      icon: const Icon(
-                        Icons.play_circle_fill_rounded,
-                        size: 34,
-                      ),
-                      onPressed: () {
-                        final nav = Navigator.of(context);
-                        app.load(w);
-                        nav.pop();
-                        nav.push(
-                          MaterialPageRoute(builder: (_) => RunScreen(app)),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              );
-              if (onDelete == null) return t;
-              return Dismissible(
-                key: ObjectKey(w),
-                direction: DismissDirection.endToStart,
-                background: Container(
-                  color: Colors.red.shade700,
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 24),
-                  child: const Icon(Icons.delete),
-                ),
-                onDismissed: (_) => onDelete(),
-                child: t,
-              );
-            }
-
-            Widget empty(String msg) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Text(
-                  msg,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white60),
-                ),
+  showPanel(
+    context,
+    tall: true,
+    builder: (context) => DefaultTabController(
+      length: 3,
+      initialIndex: app.saved.isEmpty ? 0 : 1,
+      child: ListenableBuilder(
+        listenable: app,
+        builder: (context, _) {
+          Widget tile(Workout w, {VoidCallback? onDelete}) {
+            final t = ListTile(
+              title: Text(w.name.isEmpty ? 'Custom workout' : w.name),
+              subtitle: Text(w.summary),
+              onTap: () {
+                app.load(w);
+                Navigator.pop(context);
+              },
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    fmt(w.totalSecs),
+                    style: const TextStyle(fontFeatures: _tabular),
+                  ),
+                  IconButton(
+                    tooltip: 'Start now',
+                    icon: const Icon(Icons.play_circle_fill_rounded, size: 34),
+                    onPressed: () {
+                      final nav = Navigator.of(context);
+                      app.load(w);
+                      nav.pop();
+                      nav.push(
+                        MaterialPageRoute(builder: (_) => RunScreen(app)),
+                      );
+                    },
+                  ),
+                ],
               ),
             );
+            if (onDelete == null) return t;
+            return Dismissible(
+              key: ObjectKey(w),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                color: Colors.red.shade700,
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 24),
+                child: const Icon(Icons.delete),
+              ),
+              onDismissed: (_) => onDelete(),
+              child: t,
+            );
+          }
 
-            return Column(
-              children: [
-                const TabBar(
-                  tabs: [
-                    Tab(text: 'Presets'),
-                    Tab(text: 'Saved'),
-                    Tab(text: 'Recent'),
-                  ],
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      ListView(children: [for (final w in presets) tile(w)]),
-                      ListView(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: FilledButton.icon(
-                              onPressed: () => askSaveName(context, app),
-                              icon: const Icon(Icons.bookmark_add_outlined),
-                              label: const Text('Save current workout'),
+          Widget empty(String msg) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Text(
+                msg,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white60),
+              ),
+            ),
+          );
+
+          return Column(
+            children: [
+              const TabBar(
+                tabs: [
+                  Tab(text: 'Presets'),
+                  Tab(text: 'Saved'),
+                  Tab(text: 'Recent'),
+                ],
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    ListView(children: [for (final w in presets) tile(w)]),
+                    ListView(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: FilledButton.icon(
+                            onPressed: () => askSaveName(context, app),
+                            icon: const Icon(Icons.bookmark_add_outlined),
+                            label: const Text('Save current workout'),
+                          ),
+                        ),
+                        if (app.saved.isEmpty)
+                          empty(
+                            'Nothing saved yet.\nSet up a workout, then save it here.',
+                          ),
+                        for (final w in app.saved)
+                          tile(w, onDelete: () => app.deleteSaved(w)),
+                        if (app.saved.isNotEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Text(
+                              'Swipe left to delete',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.white38),
                             ),
                           ),
-                          if (app.saved.isEmpty)
-                            empty(
-                              'Nothing saved yet.\nSet up a workout, then save it here.',
-                            ),
-                          for (final w in app.saved)
-                            tile(w, onDelete: () => app.deleteSaved(w)),
-                          if (app.saved.isNotEmpty)
-                            const Padding(
-                              padding: EdgeInsets.all(16),
-                              child: Text(
-                                'Swipe left to delete',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.white38),
-                              ),
-                            ),
-                        ],
-                      ),
-                      app.recent.isEmpty
-                          ? empty('Workouts you run show up here.')
-                          : ListView(
-                              children: [for (final w in app.recent) tile(w)],
-                            ),
-                    ],
-                  ),
+                      ],
+                    ),
+                    app.recent.isEmpty
+                        ? empty('Workouts you run show up here.')
+                        : ListView(
+                            children: [for (final w in app.recent) tile(w)],
+                          ),
+                  ],
                 ),
-              ],
-            );
-          },
-        ),
+              ),
+            ],
+          );
+        },
       ),
     ),
   );
@@ -350,57 +390,59 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
       icon: const Icon(Icons.add),
       label: const Text('Add exercise'),
     ),
-    body: Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Name each stretch so the timer can show and say it. Hold and drag to reorder.',
-                  style: TextStyle(color: Colors.white60),
+    body: pageBody(
+      Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Name each stretch so the timer can show and say it. Hold and drag to reorder.',
+                    style: TextStyle(color: Colors.white60),
+                  ),
                 ),
-              ),
-              RepeatButton(
-                Icons.remove,
-                'Fewer',
-                () => remove(ctrls.length - 1),
-              ),
-              const SizedBox(width: 8),
-              RepeatButton(Icons.add, 'More', add),
-            ],
+                RepeatButton(
+                  Icons.remove,
+                  'Fewer',
+                  () => remove(ctrls.length - 1),
+                ),
+                const SizedBox(width: 8),
+                RepeatButton(Icons.add, 'More', add),
+              ],
+            ),
           ),
-        ),
-        Expanded(
-          child: ReorderableListView.builder(
-            padding: const EdgeInsets.only(bottom: 96),
-            itemCount: ctrls.length,
-            onReorderItem: (from, to) {
-              setState(() => ctrls.insert(to, ctrls.removeAt(from)));
-              save();
-            },
-            itemBuilder: (context, i) => ListTile(
-              key: ObjectKey(ctrls[i]),
-              leading: CircleAvatar(child: Text('${i + 1}')),
-              title: TextField(
-                controller: ctrls[i],
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  hintText: 'Exercise ${i + 1}',
-                  border: InputBorder.none,
+          Expanded(
+            child: ReorderableListView.builder(
+              padding: const EdgeInsets.only(bottom: 96),
+              itemCount: ctrls.length,
+              onReorderItem: (from, to) {
+                setState(() => ctrls.insert(to, ctrls.removeAt(from)));
+                save();
+              },
+              itemBuilder: (context, i) => ListTile(
+                key: ObjectKey(ctrls[i]),
+                leading: CircleAvatar(child: Text('${i + 1}')),
+                title: TextField(
+                  controller: ctrls[i],
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(
+                    hintText: 'Exercise ${i + 1}',
+                    border: InputBorder.none,
+                  ),
+                  onChanged: (_) => save(),
                 ),
-                onChanged: (_) => save(),
-              ),
-              trailing: IconButton(
-                tooltip: 'Remove',
-                onPressed: ctrls.length > 1 ? () => remove(i) : null,
-                icon: const Icon(Icons.delete_outline),
+                trailing: IconButton(
+                  tooltip: 'Remove',
+                  onPressed: ctrls.length > 1 ? () => remove(i) : null,
+                  icon: const Icon(Icons.delete_outline),
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }
@@ -412,67 +454,69 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Settings')),
-    body: ListenableBuilder(
-      listenable: app,
-      builder: (context, _) {
-        final s = app.settings;
-        return ListView(
-          children: [
-            SwitchListTile(
-              secondary: const Icon(Icons.record_voice_over_outlined),
-              title: const Text('Voice announcements'),
-              subtitle: const Text(
-                'Says the stretch name, "Rest" and counts down 3, 2, 1',
+    body: pageBody(
+      ListenableBuilder(
+        listenable: app,
+        builder: (context, _) {
+          final s = app.settings;
+          return ListView(
+            children: [
+              SwitchListTile(
+                secondary: const Icon(Icons.record_voice_over_outlined),
+                title: const Text('Voice announcements'),
+                subtitle: const Text(
+                  'Says the stretch name, "Rest" and counts down 3, 2, 1',
+                ),
+                value: s.voice,
+                onChanged: (v) => app.updateSettings(s.copyWith(voice: v)),
               ),
-              value: s.voice,
-              onChanged: (v) => app.updateSettings(s.copyWith(voice: v)),
-            ),
-            SwitchListTile(
-              secondary: const Icon(Icons.volume_up_outlined),
-              title: const Text('Sounds'),
-              subtitle: const Text('Beeps at phase changes and countdown'),
-              value: s.sound,
-              onChanged: (v) => app.updateSettings(s.copyWith(sound: v)),
-            ),
-            SwitchListTile(
-              secondary: const Icon(Icons.vibration),
-              title: const Text('Vibration'),
-              subtitle: const Text('On phones that support it'),
-              value: s.vibration,
-              onChanged: (v) => app.updateSettings(s.copyWith(vibration: v)),
-            ),
-            SwitchListTile(
-              secondary: const Icon(Icons.light_mode_outlined),
-              title: const Text('Keep screen on'),
-              subtitle: const Text('During a workout'),
-              value: s.keepAwake,
-              onChanged: (v) => app.updateSettings(s.copyWith(keepAwake: v)),
-            ),
-            const ListTile(
-              leading: Icon(Icons.timer_outlined),
-              title: Text('Get ready countdown'),
-              subtitle: Text(
-                'Time to get into position before the first exercise',
+              SwitchListTile(
+                secondary: const Icon(Icons.volume_up_outlined),
+                title: const Text('Sounds'),
+                subtitle: const Text('Beeps at phase changes and countdown'),
+                value: s.sound,
+                onChanged: (v) => app.updateSettings(s.copyWith(sound: v)),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SegmentedButton<int>(
-                segments: [
-                  for (final v in [0, 3, 5, 10])
-                    ButtonSegment(
-                      value: v,
-                      label: Text(v == 0 ? 'Off' : '${v}s'),
-                    ),
-                ],
-                selected: {s.readySecs},
-                onSelectionChanged: (v) =>
-                    app.updateSettings(s.copyWith(readySecs: v.first)),
+              SwitchListTile(
+                secondary: const Icon(Icons.vibration),
+                title: const Text('Vibration'),
+                subtitle: const Text('On phones that support it'),
+                value: s.vibration,
+                onChanged: (v) => app.updateSettings(s.copyWith(vibration: v)),
               ),
-            ),
-          ],
-        );
-      },
+              SwitchListTile(
+                secondary: const Icon(Icons.light_mode_outlined),
+                title: const Text('Keep screen on'),
+                subtitle: const Text('During a workout'),
+                value: s.keepAwake,
+                onChanged: (v) => app.updateSettings(s.copyWith(keepAwake: v)),
+              ),
+              const ListTile(
+                leading: Icon(Icons.timer_outlined),
+                title: Text('Get ready countdown'),
+                subtitle: Text(
+                  'Time to get into position before the first exercise',
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SegmentedButton<int>(
+                  segments: [
+                    for (final v in [0, 3, 5, 10])
+                      ButtonSegment(
+                        value: v,
+                        label: Text(v == 0 ? 'Off' : '${v}s'),
+                      ),
+                  ],
+                  selected: {s.readySecs},
+                  onSelectionChanged: (v) =>
+                      app.updateSettings(s.copyWith(readySecs: v.first)),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     ),
   );
 }
