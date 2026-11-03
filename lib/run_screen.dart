@@ -34,7 +34,10 @@ const liveColors = {
 
 /// The iOS Live Activity (lock screen + Dynamic Island), see AppDelegate.swift.
 const liveActivity = MethodChannel('stretch_time/live_activity');
-final hasLiveActivity = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
+/// The Apple Health workout that runs alongside the timer, see AppDelegate.swift.
+const healthWorkout = MethodChannel('stretch_time/workout');
+final isIOS = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
 /// Beeps, speech and haptics, each gated by its setting.
 class Cues {
@@ -118,6 +121,7 @@ class _RunScreenState extends State<RunScreen> {
     widget.app.recordRun();
     engine = TimerEngine(buildPlan(w, ready: settings.readySecs), now);
     if (settings.keepAwake) WakelockPlus.enable();
+    if (isIOS) healthWorkout.invokeMethod('start');
     ticker = Timer.periodic(const Duration(milliseconds: 100), (_) => tick());
     announce();
   }
@@ -127,7 +131,12 @@ class _RunScreenState extends State<RunScreen> {
     ticker.cancel();
     cues.dispose();
     WakelockPlus.disable();
-    if (hasLiveActivity) liveActivity.invokeMethod('end');
+    // Already ended when done; ending again could hit the workout and card
+    // that "Again" has started by the time this screen is disposed.
+    if (isIOS && !engine.done) {
+      liveActivity.invokeMethod('end');
+      healthWorkout.invokeMethod('end', false);
+    }
     super.dispose();
   }
 
@@ -149,7 +158,7 @@ class _RunScreenState extends State<RunScreen> {
 
   /// Sent on phase changes and pause/skip; the system counts down in between.
   void showLive() {
-    if (!hasLiveActivity) return;
+    if (!isIOS) return;
     if (engine.done) {
       liveActivity.invokeMethod('end');
       return;
@@ -178,6 +187,7 @@ class _RunScreenState extends State<RunScreen> {
         ticker.cancel();
         cues.finished();
         widget.app.logRun(w.totalSecs);
+        if (isIOS) healthWorkout.invokeMethod('end', true);
       }
     }
     final left = engine.secondsLeft(t);
@@ -193,6 +203,7 @@ class _RunScreenState extends State<RunScreen> {
     lastSecond = null;
     tick();
     showLive();
+    if (isIOS) healthWorkout.invokeMethod(engine.paused ? 'pause' : 'resume');
     setState(() {});
   }
 
