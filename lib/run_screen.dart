@@ -183,12 +183,14 @@ class _RunScreenState extends State<RunScreen> {
     if (engine.update(t)) {
       lastSecond = null;
       announce();
-      if (engine.done) {
-        ticker.cancel();
-        cues.finished();
-        widget.app.logRun(w.totalSecs);
-        if (isIOS) healthWorkout.invokeMethod('end', true);
-      }
+    }
+    // Outside the branch above: skipping the last segment finishes the
+    // workout inside engine.skip, so update() here reports no change.
+    if (engine.done && ticker.isActive) {
+      ticker.cancel();
+      cues.finished();
+      widget.app.logRun(w.totalSecs);
+      if (isIOS) healthWorkout.invokeMethod('end', true);
     }
     final left = engine.secondsLeft(t);
     if (left == lastSecond) return; // repaint only when the display changes
