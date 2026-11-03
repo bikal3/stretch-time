@@ -4,6 +4,9 @@ class Workout {
   final String name;
   final int work, rest, rounds, reset; // seconds, except rounds
   final List<String> exercises; // one entry per exercise, '' = unnamed
+  /// false: each exercise for all its rounds, then the next (1,1,1,2,2,2…).
+  /// true: every exercise once per round, then repeat (1,2,3…,1,2,3…).
+  final bool circuit;
 
   const Workout({
     this.name = '',
@@ -12,6 +15,7 @@ class Workout {
     required this.exercises,
     required this.rounds,
     required this.reset,
+    this.circuit = false,
   });
 
   int get count => exercises.length;
@@ -37,6 +41,7 @@ class Workout {
     List<String>? exercises,
     int? rounds,
     int? reset,
+    bool? circuit,
   }) => Workout(
     name: name ?? this.name,
     work: work ?? this.work,
@@ -44,6 +49,7 @@ class Workout {
     exercises: exercises ?? this.exercises,
     rounds: rounds ?? this.rounds,
     reset: reset ?? this.reset,
+    circuit: circuit ?? this.circuit,
   );
 
   Map<String, dynamic> toJson() => {
@@ -53,6 +59,7 @@ class Workout {
     'exercises': exercises,
     'rounds': rounds,
     'reset': reset,
+    'circuit': circuit,
   };
 
   factory Workout.fromJson(Map<String, dynamic> j) => Workout(
@@ -62,6 +69,7 @@ class Workout {
     exercises: List<String>.from(j['exercises']),
     rounds: j['rounds'],
     reset: j['reset'],
+    circuit: j['circuit'] ?? false,
   );
 
   /// Same timings and exercises, ignoring the name.
@@ -70,6 +78,7 @@ class Workout {
       rest == o.rest &&
       rounds == o.rounds &&
       reset == o.reset &&
+      circuit == o.circuit &&
       exercises.join('\n') == o.exercises.join('\n');
 
   String get summary =>
@@ -84,18 +93,36 @@ class Segment {
   const Segment(this.phase, this.secs, this.round, this.exercise);
 }
 
-/// Rest sits between exercises and Round Reset between rounds, never after
-/// the last one. A Rest/Reset segment's [exercise] is the one coming next.
-List<Segment> buildPlan(Workout w, {int ready = 0}) => [
-  if (ready > 0) Segment(Phase.ready, ready, 1, 0),
-  for (var r = 1; r <= w.rounds; r++) ...[
-    for (var e = 0; e < w.count; e++) ...[
-      Segment(Phase.work, w.work, r, e),
-      if (e < w.count - 1 && w.rest > 0) Segment(Phase.rest, w.rest, r, e + 1),
+/// Rest sits between sets and, in circuit mode, Round Reset between rounds;
+/// never after the last set. A Rest/Reset segment's [round] and [exercise]
+/// are those of the set coming next.
+List<Segment> buildPlan(Workout w, {int ready = 0}) {
+  final sets = w.circuit
+      ? [
+          for (var r = 1; r <= w.rounds; r++)
+            for (var e = 0; e < w.count; e++) (r, e),
+        ]
+      : [
+          for (var e = 0; e < w.count; e++)
+            for (var r = 1; r <= w.rounds; r++) (r, e),
+        ];
+  return [
+    if (ready > 0) Segment(Phase.ready, ready, 1, 0),
+    for (var i = 0; i < sets.length; i++) ...[
+      Segment(Phase.work, w.work, sets[i].$1, sets[i].$2),
+      if (i < sets.length - 1) ?_gap(w, sets[i].$1, sets[i + 1]),
     ],
-    if (r < w.rounds && w.reset > 0) Segment(Phase.reset, w.reset, r + 1, 0),
-  ],
-];
+  ];
+}
+
+Segment? _gap(Workout w, int round, (int, int) next) {
+  final (r, e) = next;
+  final newRound = r != round && w.circuit;
+  final secs = newRound ? w.reset : w.rest;
+  return secs > 0
+      ? Segment(newRound ? Phase.reset : Phase.rest, secs, r, e)
+      : null;
+}
 
 String fmt(int s) =>
     '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';

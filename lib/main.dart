@@ -265,25 +265,53 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
-          gap,
-          Expanded(
-            child: tile(
-              'reset',
-              'Round Reset',
-              fmt(w.reset),
-              () => edit('reset', 'Round Reset', w.reset, [
-                0,
-                10,
-                15,
-                30,
-                60,
-                90,
-                120,
-              ], (v) => app.current.copyWith(reset: v)),
+          if (w.circuit) ...[
+            gap,
+            Expanded(
+              child: tile(
+                'reset',
+                'Round Reset',
+                fmt(w.reset),
+                () => edit('reset', 'Round Reset', w.reset, [
+                  0,
+                  10,
+                  15,
+                  30,
+                  60,
+                  90,
+                  120,
+                ], (v) => app.current.copyWith(reset: v)),
+              ),
             ),
-          ),
+          ],
         ],
       ),
+      if (w.rounds > 1) ...[
+        gap,
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<bool>(
+            segments: [
+              ButtonSegment(
+                value: false,
+                icon: const Icon(Icons.repeat_one_rounded),
+                label: Text(
+                  '${w.rounds}× each exercise',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const ButtonSegment(
+                value: true,
+                icon: Icon(Icons.repeat_rounded),
+                label: Text('Circuit', overflow: TextOverflow.ellipsis),
+              ),
+            ],
+            selected: {w.circuit},
+            onSelectionChanged: (v) =>
+                app.edit(app.current.copyWith(circuit: v.first)),
+          ),
+        ),
+      ],
       gap,
       Material(
         color: ex.bg(context),
