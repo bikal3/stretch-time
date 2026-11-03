@@ -177,10 +177,10 @@ class TimerEngine {
     return changed;
   }
 
-  int _leftMs(Duration now) =>
+  int msLeft(Duration now) =>
       done ? 0 : (_pausedLeft ?? (_endAt - now)).inMilliseconds;
 
-  int secondsLeft(Duration now) => (_leftMs(now) / 1000).ceil();
+  int secondsLeft(Duration now) => (msLeft(now) / 1000).ceil();
 
   int totalLeft(Duration now) =>
       secondsLeft(now) + plan.skip(index + 1).fold(0, (s, p) => s + p.secs);
@@ -204,7 +204,7 @@ class TimerEngine {
   /// if we're within its first 2 seconds.
   void back(Duration now) {
     if (done) return;
-    final elapsed = current.secs * 1000 - _leftMs(now);
+    final elapsed = current.secs * 1000 - msLeft(now);
     if (elapsed < 2000 && index > 0) index--;
     final full = Duration(seconds: current.secs);
     if (paused) {

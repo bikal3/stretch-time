@@ -24,6 +24,18 @@ const phaseLabels = {
   Phase.reset: 'Round Reset',
 };
 
+/// Brighter phase colors for the dark lock-screen card.
+const liveColors = {
+  Phase.ready: 0xFFFFFFFF,
+  Phase.work: 0xFF5EE39A,
+  Phase.rest: 0xFFFF6B83,
+  Phase.reset: 0xFFF5D061,
+};
+
+/// The iOS Live Activity (lock screen + Dynamic Island), see AppDelegate.swift.
+const liveActivity = MethodChannel('stretch_time/live_activity');
+final hasLiveActivity = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
 /// Beeps, speech and haptics, each gated by its setting.
 class Cues {
   final Settings s;
@@ -115,6 +127,7 @@ class _RunScreenState extends State<RunScreen> {
     ticker.cancel();
     cues.dispose();
     WakelockPlus.disable();
+    if (hasLiveActivity) liveActivity.invokeMethod('end');
     super.dispose();
   }
 
@@ -131,6 +144,29 @@ class _RunScreenState extends State<RunScreen> {
     } else {
       cues.phase(speechFor(engine.current));
     }
+    showLive();
+  }
+
+  /// Sent on phase changes and pause/skip; the system counts down in between.
+  void showLive() {
+    if (!hasLiveActivity) return;
+    if (engine.done) {
+      liveActivity.invokeMethod('end');
+      return;
+    }
+    final t = now, seg = engine.current;
+    final end = DateTime.now().add(Duration(milliseconds: engine.msLeft(t)));
+    final name = w.exerciseName(seg.exercise);
+    liveActivity.invokeMethod('update', {
+      'phase': phaseLabels[seg.phase],
+      'title': seg.phase == Phase.work ? name : 'Next: $name',
+      'detail':
+          'Round ${seg.round}/${w.rounds} · Exercise ${seg.exercise + 1}/${w.count}',
+      'color': liveColors[seg.phase],
+      'start': end.subtract(Duration(seconds: seg.secs)).millisecondsSinceEpoch,
+      'end': end.millisecondsSinceEpoch,
+      if (engine.paused) 'pausedSecs': engine.secondsLeft(t),
+    });
   }
 
   void tick() {
@@ -156,6 +192,7 @@ class _RunScreenState extends State<RunScreen> {
     f(now);
     lastSecond = null;
     tick();
+    showLive();
     setState(() {});
   }
 
@@ -165,7 +202,7 @@ class _RunScreenState extends State<RunScreen> {
       return;
     }
     final wasPaused = engine.paused;
-    engine.pause(now);
+    act(engine.pause);
     final stop = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
