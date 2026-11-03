@@ -9,6 +9,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'app_state.dart';
 import 'sheets.dart' show isWide;
+import 'web_cues.dart' if (dart.library.js_interop) 'web_cues_web.dart';
 import 'workout.dart';
 
 const phaseColors = {
@@ -71,23 +72,29 @@ class Cues {
   /// Workout over: let the app suspend again once in the background.
   void finished() => _keepAlive.stop();
 
+  void _say(String text) => kIsWeb ? webSay(text) : _tts.speak(text);
+
+  void _sound(AudioPlayer player, String asset) =>
+      kIsWeb ? webSound(asset) : player.play(AssetSource(asset));
+
   void countdown(int n) {
     if (s.voice) {
-      _tts.speak('$n');
+      _say('$n');
     } else if (s.sound) {
-      _beep.play(AssetSource('beep.wav'));
+      _sound(_beep, 'beep.wav');
     }
     if (s.vibration) HapticFeedback.lightImpact();
   }
 
   void phase(String speech) {
-    if (s.sound) _gong.play(AssetSource('gong.wav'));
-    if (s.voice) _tts.speak(speech);
+    if (s.sound) _sound(_gong, 'gong.wav');
+    if (s.voice) _say(speech);
     if (s.vibration) HapticFeedback.heavyImpact();
   }
 
   void dispose() {
     _tts.stop();
+    if (kIsWeb) webHush();
     _beep.dispose();
     _gong.dispose();
     _keepAlive.dispose();

@@ -4,10 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app_state.dart';
 import 'run_screen.dart';
 import 'sheets.dart';
+import 'web_cues.dart' if (dart.library.js_interop) 'web_cues_web.dart';
 import 'workout.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  initWebCues();
   final app = AppState(await SharedPreferences.getInstance());
   runApp(
     ListenableBuilder(
