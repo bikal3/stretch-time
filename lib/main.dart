@@ -292,6 +292,11 @@ class HomeScreen extends StatelessWidget {
           width: double.infinity,
           child: SegmentedButton<bool>(
             segments: [
+              const ButtonSegment(
+                value: true,
+                icon: Icon(Icons.repeat_rounded),
+                label: Text('Circuit', overflow: TextOverflow.ellipsis),
+              ),
               ButtonSegment(
                 value: false,
                 icon: const Icon(Icons.repeat_one_rounded),
@@ -299,11 +304,6 @@ class HomeScreen extends StatelessWidget {
                   '${w.rounds}× each exercise',
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const ButtonSegment(
-                value: true,
-                icon: Icon(Icons.repeat_rounded),
-                label: Text('Circuit', overflow: TextOverflow.ellipsis),
               ),
             ],
             selected: {w.circuit},

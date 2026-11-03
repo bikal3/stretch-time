@@ -4,8 +4,8 @@ import 'package:stretch_time/workout.dart';
 Duration s(num secs) => Duration(milliseconds: (secs * 1000).round());
 
 void main() {
-  // 30/15, 10 ex, 3 rounds, 10 reset, run as a circuit
-  final hiit = presets.last.copyWith(circuit: true);
+  // 30/15, 10 ex, 3 rounds, 10 reset, run as a circuit (the default)
+  final hiit = presets.last;
 
   test('plan matches the reference screenshot total', () {
     expect(fmt(hiit.totalSecs), '22:05');
@@ -14,8 +14,10 @@ void main() {
     expect(buildPlan(hiit, ready: 5).first.phase, Phase.ready);
   });
 
-  test('default order runs each exercise for all rounds first', () {
-    final w = presets.last.withCount(2); // 30/15, 3 rounds, 10 reset
+  test('per-exercise order runs each exercise for all rounds first', () {
+    final w = presets.last
+        .withCount(2)
+        .copyWith(circuit: false); // 30/15, 3 rounds
     final work = buildPlan(w).where((p) => p.phase == Phase.work);
     expect(
       [for (final p in work) (p.exercise, p.round)],
@@ -32,10 +34,11 @@ void main() {
     expect([for (final p in circ) p.exercise], [0, 1, 0, 1, 0, 1]);
   });
 
-  test('order survives save/load; old data defaults to per-exercise', () {
-    expect(Workout.fromJson(hiit.toJson()).circuit, isTrue);
-    expect(Workout.fromJson(hiit.toJson()..remove('circuit')).circuit, isFalse);
-    expect(hiit.sameAs(presets.last), isFalse);
+  test('order survives save/load; old data defaults to circuit', () {
+    final each = hiit.copyWith(circuit: false);
+    expect(Workout.fromJson(each.toJson()).circuit, isFalse);
+    expect(Workout.fromJson(each.toJson()..remove('circuit')).circuit, isTrue);
+    expect(each.sameAs(hiit), isFalse);
   });
 
   test('rest segment points at the next exercise', () {

@@ -4,8 +4,8 @@ class Workout {
   final String name;
   final int work, rest, rounds, reset; // seconds, except rounds
   final List<String> exercises; // one entry per exercise, '' = unnamed
+  /// true (default): every exercise once per round, then repeat (1,2,3…,1,2,3…).
   /// false: each exercise for all its rounds, then the next (1,1,1,2,2,2…).
-  /// true: every exercise once per round, then repeat (1,2,3…,1,2,3…).
   final bool circuit;
 
   const Workout({
@@ -15,7 +15,7 @@ class Workout {
     required this.exercises,
     required this.rounds,
     required this.reset,
-    this.circuit = false,
+    this.circuit = true,
   });
 
   int get count => exercises.length;
@@ -69,7 +69,7 @@ class Workout {
     exercises: List<String>.from(j['exercises']),
     rounds: j['rounds'],
     reset: j['reset'],
-    circuit: j['circuit'] ?? false,
+    circuit: j['circuit'] ?? true,
   );
 
   /// Same timings and exercises, ignoring the name.
