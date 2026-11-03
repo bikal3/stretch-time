@@ -129,6 +129,32 @@ class HomeScreen extends StatelessWidget {
     ),
   );
 
+  /// "🔥 5-day streak · 42 min in the last 7 days", once anything is logged.
+  Widget activity(BuildContext context) {
+    final now = DateTime.now();
+    final days = streak(app.log, now);
+    final mins = (weekSecs(app.log, now) / 60).round();
+    return Text.rich(
+      TextSpan(
+        children: [
+          if (days > 0) ...[
+            const WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Icon(
+                Icons.local_fire_department_rounded,
+                size: 20,
+                color: Color(0xFFF97316),
+              ),
+            ),
+            TextSpan(text: ' $days-day streak · '),
+          ],
+          TextSpan(text: '$mins min in the last 7 days'),
+        ],
+      ),
+      style: TextStyle(fontSize: 15, color: muted(context)),
+    );
+  }
+
   /// 2×2 grid of timing tiles plus a full-width exercises tile.
   List<Widget> settingTiles(BuildContext context) {
     final w = app.current;
@@ -632,6 +658,10 @@ class HomeScreen extends StatelessWidget {
                 ),
               ],
             ),
+            if (app.log.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              activity(context),
+            ],
             const SizedBox(height: 16),
             heroCard(context, w, compact: true),
             sectionTitle(context, 'Customize', top: 28),
@@ -771,6 +801,10 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (app.log.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    activity(context),
+                  ],
                   const SizedBox(height: 32),
                   IntrinsicHeight(
                     child: Row(

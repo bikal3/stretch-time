@@ -82,4 +82,15 @@ void main() {
     expect(w.exerciseName(9), 'Exercise 10');
     expect(w.withCount(2).exercises, ['Neck stretch', 'Shoulder rolls']);
   });
+
+  test('streak counts back from today, or from yesterday', () {
+    final today = DateTime(2026, 3, 2); // crosses into February
+    final log = {
+      for (final d in ['2026-02-27', '2026-02-28', '2026-03-01']) d: 60,
+    };
+    expect(streak(log, today), 3); // today not done yet
+    expect(streak({...log, '2026-03-02': 60}, today), 4);
+    expect(streak(log, DateTime(2026, 3, 3)), 0); // missed yesterday
+    expect(weekSecs({...log, '2026-02-23': 60}, today), 180); // 8 days ago
+  });
 }

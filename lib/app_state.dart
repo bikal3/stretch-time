@@ -59,6 +59,7 @@ class AppState extends ChangeNotifier {
   late Workout current;
   late List<Workout> saved, recent;
   late Settings settings;
+  late Map<String, int> log; // see dayKey
 
   AppState(this._prefs) {
     // Corrupt or old-format data shouldn't brick the app: fall back to defaults.
@@ -74,6 +75,7 @@ class AppState extends ChangeNotifier {
       <Workout>[],
     );
     settings = _read('settings', (j) => Settings.fromJson(j), const Settings());
+    log = _read('log', (j) => Map<String, int>.from(j), <String, int>{});
   }
 
   T _read<T>(String key, T Function(dynamic) parse, T fallback) {
@@ -119,6 +121,13 @@ class AppState extends ChangeNotifier {
       ...recent.where((w) => !w.sameAs(current)),
     ].take(15).toList();
     _write('recent', recent);
+  }
+
+  // ponytail: one entry per day, never pruned; ~15 KB after a year.
+  void logRun(int secs) {
+    final day = dayKey(DateTime.now());
+    log = {...log, day: (log[day] ?? 0) + secs};
+    _write('log', log);
   }
 
   void updateSettings(Settings s) {

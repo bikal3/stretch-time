@@ -141,6 +141,7 @@ class _RunScreenState extends State<RunScreen> {
       if (engine.done) {
         ticker.cancel();
         cues.finished();
+        widget.app.logRun(w.totalSecs);
       }
     }
     final left = engine.secondsLeft(t);
@@ -406,6 +407,17 @@ class _RunScreenState extends State<RunScreen> {
                     '${fmt(w.totalSecs)} · ${w.count} exercise${w.count == 1 ? '' : 's'} · ${w.rounds} round${w.rounds == 1 ? '' : 's'}',
                     style: const TextStyle(fontSize: 18),
                   ),
+                  if (streak(widget.app.log, DateTime.now()) case final d
+                      when d > 1) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '🔥 $d-day streak',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 40),
                   Row(
                     mainAxisSize: MainAxisSize.min,

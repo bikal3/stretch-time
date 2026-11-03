@@ -127,6 +127,29 @@ Segment? _gap(Workout w, int round, (int, int) next) {
 String fmt(int s) =>
     '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
 
+// Workout log: local date ('2026-11-03') -> seconds of finished workouts.
+String dayKey(DateTime d) =>
+    '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+DateTime _daysAgo(DateTime today, int n) =>
+    DateTime(today.year, today.month, today.day - n);
+
+/// Consecutive days with a workout, ending today, or ending yesterday so the
+/// streak holds until today's workout is done.
+int streak(Map<String, int> log, DateTime today) {
+  final from = log.containsKey(dayKey(today)) ? 0 : 1;
+  var n = 0;
+  while (log.containsKey(dayKey(_daysAgo(today, from + n)))) {
+    n++;
+  }
+  return n;
+}
+
+/// Seconds worked over the last 7 days, today included.
+int weekSecs(Map<String, int> log, DateTime today) =>
+    [for (var i = 0; i < 7; i++) log[dayKey(_daysAgo(today, i))] ?? 0]
+        .fold(0, (a, b) => a + b);
+
 /// Time is derived from timestamps, not tick counts, so a throttled or
 /// backgrounded app never drifts; [update] just catches up.
 class TimerEngine {
