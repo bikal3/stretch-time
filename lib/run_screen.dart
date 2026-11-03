@@ -28,7 +28,9 @@ const phaseLabels = {
 class Cues {
   final Settings s;
   final _tts = FlutterTts();
-  final _beep = AudioPlayer(), _gong = AudioPlayer();
+  final _beep = AudioPlayer(),
+      _gong = AudioPlayer(),
+      _keepAlive = AudioPlayer();
 
   Cues(this.s) {
     // Mix with (and duck) the user's music instead of stopping it.
@@ -42,7 +44,17 @@ class Cues {
       ]);
     }
     _tts.setSpeechRate(kIsWeb ? 1.0 : 0.5);
+    // iOS suspends a backgrounded app, which would silence the cues while the
+    // phone is locked. Looping silence (with the `audio` background mode in
+    // Info.plist) keeps it running for the length of the workout.
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      _keepAlive.setReleaseMode(ReleaseMode.loop);
+      _keepAlive.play(AssetSource('silence.wav'));
+    }
   }
+
+  /// Workout over: let the app suspend again once in the background.
+  void finished() => _keepAlive.stop();
 
   void countdown(int n) {
     if (s.voice) {
@@ -63,6 +75,7 @@ class Cues {
     _tts.stop();
     _beep.dispose();
     _gong.dispose();
+    _keepAlive.dispose();
   }
 }
 
@@ -125,7 +138,10 @@ class _RunScreenState extends State<RunScreen> {
     if (engine.update(t)) {
       lastSecond = null;
       announce();
-      if (engine.done) ticker.cancel();
+      if (engine.done) {
+        ticker.cancel();
+        cues.finished();
+      }
     }
     final left = engine.secondsLeft(t);
     if (left == lastSecond) return; // repaint only when the display changes
