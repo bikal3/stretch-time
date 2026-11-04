@@ -17,6 +17,8 @@ Interval timer for stretching and workouts — one Flutter codebase for Android,
 
 - Work / Rest / Exercises / Rounds / Round Reset timer
 - Name each stretch; the timer shows and announces the current and next one
+- A posture picture and form tips (ⓘ) for every built-in stretch
+- Streak, a week of day dots, and minutes in the last 7 days
 - Voice cues, beeps and vibration that mix with your music
 - Built-in presets, saved workouts and recent history
 - Light, dark or system theme

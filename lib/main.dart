@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_state.dart';
+import 'postures.dart';
 import 'run_screen.dart';
 import 'sheets.dart';
 import 'web_cues.dart' if (dart.library.js_interop) 'web_cues_web.dart';
@@ -11,6 +13,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   initWebCues();
   final app = AppState(await SharedPreferences.getInstance());
+  assetPaths = (await AssetManifest.loadFromAssetBundle(rootBundle))
+      .listAssets()
+      .toSet();
   runApp(
     ListenableBuilder(
       listenable: app,

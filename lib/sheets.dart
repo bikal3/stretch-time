@@ -609,104 +609,44 @@ class SettingsScreen extends StatelessWidget {
       );
 }
 
-/// A [Pose] as a stick figure; [red] limbs are drawn in red.
-class Figure extends StatelessWidget {
-  final Pose pose;
-  final Color color;
-  final Set<Limb> red;
-  const Figure(
-    this.pose, {
-    super.key,
-    required this.color,
-    this.red = const {},
-  });
-
-  @override
-  Widget build(BuildContext context) => AspectRatio(
-    aspectRatio: 1,
-    child: CustomPaint(painter: _FigurePainter(pose, color, red)),
-  );
-}
-
-class _FigurePainter extends CustomPainter {
-  final Pose pose;
-  final Color color;
-  final Set<Limb> red;
-  _FigurePainter(this.pose, this.color, this.red);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final k = size.shortestSide / 100;
-    Offset at((double, double) p) => Offset(p.$1 * k, p.$2 * k);
-    Paint pen(Color c, double w) => Paint()
-      ..color = c
-      ..strokeWidth = w * k
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke;
-    Path line(List<(double, double)> pts) =>
-        Path()..addPolygon([for (final p in pts) at(p)], false);
-
-    for (final p in pose.props) {
-      canvas.drawPath(line(p), pen(color.withValues(alpha: 0.45), 1.6));
-    }
-    final j = pose.joints;
-    for (final MapEntry(key: limb, value: idx) in limbJoints.entries) {
-      final c = red.contains(limb) ? const Color(0xFFE5484D) : color;
-      canvas.drawPath(line([for (final i in idx) j[i]]), pen(c, 3.4));
-    }
-    final headPen = pen(
-      red.contains(Limb.head) ? const Color(0xFFE5484D) : color,
-      3.4,
-    );
-    canvas.drawCircle(at(j[0]), 6.5 * k, headPen..style = PaintingStyle.fill);
-  }
-
-  @override
-  bool shouldRepaint(_FigurePainter old) =>
-      old.pose != pose || old.color != color;
-}
-
-/// Correct vs. common-mistake figures and form tips for one exercise.
-void showPostureInfo(BuildContext context, String name, Posture p) {
+/// Posture images (when bundled) and form tips for one exercise.
+void showPostureInfo(BuildContext context, String name, List<String> tips) {
+  final right = postureImage(name), wrong = postureImage(name, wrong: true);
   showPanel(
     context,
     builder: (context) {
-      final fg = Theme.of(context).colorScheme.onSurface;
-      Widget side(
-        Pose pose,
-        Set<Limb> red,
-        IconData icon,
-        Color c,
-        String label,
-      ) => Expanded(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: c.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Figure(pose, color: fg, red: red),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+      Widget side(String path, IconData icon, Color c, String label) =>
+          Expanded(
+            child: Column(
               children: [
-                Icon(icon, color: c, size: 20),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    label,
-                    style: TextStyle(color: c, fontWeight: FontWeight.w600),
+                // White behind line art, so it shows in dark mode too.
+                Container(
+                  height: 240,
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
                   ),
+                  child: Image.asset(path, fit: BoxFit.contain),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, color: c, size: 20),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        label,
+                        style: TextStyle(color: c, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      );
+          );
 
       // Scrolls on short phones, where the sheet is capped below full height.
       return SafeArea(
@@ -719,28 +659,31 @@ void showPostureInfo(BuildContext context, String name, Posture p) {
               children: [
                 Text(name, style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 16),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    side(
-                      p.correct,
-                      const {},
-                      Icons.check_circle_rounded,
-                      const Color(0xFF1E9E5A),
-                      'Correct',
-                    ),
-                    const SizedBox(width: 12),
-                    side(
-                      p.wrong,
-                      p.wrongLimbs,
-                      Icons.cancel_rounded,
-                      const Color(0xFFE5484D),
-                      'Common mistake',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                for (final tip in p.tips)
+                if (right != null || wrong != null) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (right != null)
+                        side(
+                          right,
+                          Icons.check_circle_rounded,
+                          const Color(0xFF1E9E5A),
+                          'Correct',
+                        ),
+                      if (right != null && wrong != null)
+                        const SizedBox(width: 12),
+                      if (wrong != null)
+                        side(
+                          wrong,
+                          Icons.cancel_rounded,
+                          const Color(0xFFE5484D),
+                          'Common mistake',
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                for (final tip in tips)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Text(

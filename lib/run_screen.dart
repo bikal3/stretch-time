@@ -9,7 +9,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'app_state.dart';
 import 'postures.dart';
-import 'sheets.dart' show Figure, isWide, showPostureInfo;
+import 'sheets.dart' show isWide, showPostureInfo;
 import 'web_cues.dart' if (dart.library.js_interop) 'web_cues_web.dart';
 import 'workout.dart';
 
@@ -290,11 +290,11 @@ class _RunScreenState extends State<RunScreen> {
       Phase.work => null,
       _ => 'Next: ${w.exerciseName(seg.exercise)}',
     };
-    // Rest and Get Ready preview the next exercise's posture.
-    final posture = postureFor(w.exercises[seg.exercise]);
-    final figure = posture == null
-        ? null
-        : postureCard(posture, w.exerciseName(seg.exercise));
+    // Rest and Get Ready preview the next exercise.
+    final name = w.exerciseName(seg.exercise);
+    final image = postureImage(w.exercises[seg.exercise]);
+    final tips = tipsFor(w.exercises[seg.exercise]);
+    final figure = image == null ? null : postureCard(image);
     final clock = FittedBox(
       child: Text(
         fmt(engine.secondsLeft(t)),
@@ -329,6 +329,15 @@ class _RunScreenState extends State<RunScreen> {
                           icon: const Icon(Icons.close),
                         ),
                         const Spacer(),
+                        if (tips != null)
+                          IconButton(
+                            iconSize: 28,
+                            color: Colors.white,
+                            tooltip: 'Form tips',
+                            onPressed: () =>
+                                showPostureInfo(context, name, tips),
+                            icon: const Icon(Icons.info_outline_rounded),
+                          ),
                         if (seg.phase != Phase.ready)
                           Text(
                             'Round ${seg.round}/${w.rounds}',
@@ -441,29 +450,16 @@ class _RunScreenState extends State<RunScreen> {
     );
   }
 
-  /// The posture figure, with an info button for the form tips.
-  Widget postureCard(Posture p, String name) => Container(
-    decoration: BoxDecoration(
-      color: Colors.white12,
-      borderRadius: BorderRadius.circular(24),
-    ),
-    child: Stack(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Figure(p.correct, color: Colors.white),
-        ),
-        Positioned(
-          top: 0,
-          right: 0,
-          child: IconButton(
-            tooltip: 'Form tips',
-            color: Colors.white,
-            onPressed: () => showPostureInfo(context, name, p),
-            icon: const Icon(Icons.info_outline_rounded),
-          ),
-        ),
-      ],
+  /// The posture image on a white card, so any artwork background fits.
+  Widget postureCard(String path) => AspectRatio(
+    aspectRatio: 1,
+    child: Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Image.asset(path, fit: BoxFit.contain),
     ),
   );
 

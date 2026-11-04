@@ -108,22 +108,25 @@ void main() {
     expect(w.totalSecs - e.totalLeft(const Duration(seconds: 25)), 20);
   });
 
-  test('every named preset exercise has a well-formed posture', () {
-    for (final name in {
-      for (final w in presets) ...w.exercises.where((e) => e.isNotEmpty),
-    }) {
-      final p = postureFor(name);
-      expect(p, isNotNull, reason: name);
-      for (final pose in [p!.correct, p.wrong]) {
-        expect(pose.joints, hasLength(11), reason: name);
-        for (final (x, y) in [...pose.joints, ...pose.props.expand((l) => l)]) {
-          expect(
-            x >= 0 && x <= 100 && y >= 0 && y <= 100,
-            isTrue,
-            reason: name,
-          );
-        }
+  test('every named preset exercise has form tips', () {
+    for (final w in presets) {
+      for (final name in w.exercises.where((e) => e.isNotEmpty)) {
+        expect(tipsFor(name), isNotNull, reason: name);
       }
     }
+    expect(slug(" Child's pose "), 'childs-pose');
+  });
+
+  test('posture images are found by exercise name and type', () {
+    assetPaths = {
+      'assets/postures/quad-stretch.png',
+      'assets/postures/quad-stretch-wrong.jpg',
+    };
+    expect(postureImage('Quad stretch'), 'assets/postures/quad-stretch.png');
+    expect(
+      postureImage('Quad stretch', wrong: true),
+      'assets/postures/quad-stretch-wrong.jpg',
+    );
+    expect(postureImage('Butterfly'), isNull);
   });
 }
