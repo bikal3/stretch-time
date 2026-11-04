@@ -8,7 +8,8 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'app_state.dart';
-import 'sheets.dart' show isWide;
+import 'postures.dart';
+import 'sheets.dart' show Figure, isWide, showPostureInfo;
 import 'web_cues.dart' if (dart.library.js_interop) 'web_cues_web.dart';
 import 'workout.dart';
 
@@ -289,6 +290,22 @@ class _RunScreenState extends State<RunScreen> {
       Phase.work => null,
       _ => 'Next: ${w.exerciseName(seg.exercise)}',
     };
+    // Rest and Get Ready preview the next exercise's posture.
+    final posture = postureFor(w.exercises[seg.exercise]);
+    final figure = posture == null
+        ? null
+        : postureCard(posture, w.exerciseName(seg.exercise));
+    final clock = FittedBox(
+      child: Text(
+        fmt(engine.secondsLeft(t)),
+        style: const TextStyle(
+          fontSize: 150,
+          fontWeight: FontWeight.w800,
+          fontFeatures: [FontFeature.tabularFigures()],
+        ),
+      ),
+    );
+    final wide = isWide(context);
 
     return Scaffold(
       backgroundColor: phaseColors[seg.phase],
@@ -338,19 +355,26 @@ class _RunScreenState extends State<RunScreen> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
+                    if (figure != null && !wide)
+                      Flexible(
+                        flex: 3,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: figure,
+                        ),
+                      ),
                     // Flexible bounds the height so the clock fills big windows without overflowing.
                     Flexible(
                       flex: 4,
-                      child: FittedBox(
-                        child: Text(
-                          fmt(engine.secondsLeft(t)),
-                          style: const TextStyle(
-                            fontSize: 150,
-                            fontWeight: FontWeight.w800,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                      ),
+                      child: figure != null && wide
+                          ? Row(
+                              children: [
+                                Expanded(child: clock),
+                                const SizedBox(width: 32),
+                                figure,
+                              ],
+                            )
+                          : clock,
                     ),
                     if (seg.phase == Phase.work)
                       Text(
@@ -402,7 +426,7 @@ class _RunScreenState extends State<RunScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    if (isWide(context))
+                    if (wide)
                       const Text(
                         'Space  pause / resume   ·   ← →  back / skip   ·   Esc  end',
                         style: TextStyle(color: Colors.white54),
@@ -416,6 +440,32 @@ class _RunScreenState extends State<RunScreen> {
       ),
     );
   }
+
+  /// The posture figure, with an info button for the form tips.
+  Widget postureCard(Posture p, String name) => Container(
+    decoration: BoxDecoration(
+      color: Colors.white12,
+      borderRadius: BorderRadius.circular(24),
+    ),
+    child: Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Figure(p.correct, color: Colors.white),
+        ),
+        Positioned(
+          top: 0,
+          right: 0,
+          child: IconButton(
+            tooltip: 'Form tips',
+            color: Colors.white,
+            onPressed: () => showPostureInfo(context, name, p),
+            icon: const Icon(Icons.info_outline_rounded),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget roundButton(
     IconData icon,

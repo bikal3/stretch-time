@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:stretch_time/postures.dart';
 import 'package:stretch_time/workout.dart';
 
 Duration s(num secs) => Duration(milliseconds: (secs * 1000).round());
@@ -105,5 +106,24 @@ void main() {
     final e = TimerEngine(buildPlan(w, ready: 5), Duration.zero);
     expect(w.totalSecs - e.totalLeft(const Duration(seconds: 3)), lessThan(1));
     expect(w.totalSecs - e.totalLeft(const Duration(seconds: 25)), 20);
+  });
+
+  test('every named preset exercise has a well-formed posture', () {
+    for (final name in {
+      for (final w in presets) ...w.exercises.where((e) => e.isNotEmpty),
+    }) {
+      final p = postureFor(name);
+      expect(p, isNotNull, reason: name);
+      for (final pose in [p!.correct, p.wrong]) {
+        expect(pose.joints, hasLength(11), reason: name);
+        for (final (x, y) in [...pose.joints, ...pose.props.expand((l) => l)]) {
+          expect(
+            x >= 0 && x <= 100 && y >= 0 && y <= 100,
+            isTrue,
+            reason: name,
+          );
+        }
+      }
+    }
   });
 }
