@@ -131,12 +131,13 @@ class HomeScreen extends StatelessWidget {
     ),
   );
 
-  /// "🔥 5-day streak · 42 min in the last 7 days", once anything is logged.
+  /// "🔥 5-day streak · 42 min in the last 7 days" over a week of day dots,
+  /// once anything is logged.
   Widget activity(BuildContext context) {
     final now = DateTime.now();
     final days = streak(app.log, now);
     final mins = (weekSecs(app.log, now) / 60).round();
-    return Text.rich(
+    final summary = Text.rich(
       TextSpan(
         children: [
           if (days > 0) ...[
@@ -154,6 +155,41 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       style: TextStyle(fontSize: 15, color: muted(context)),
+    );
+    final scheme = Theme.of(context).colorScheme;
+    // Last 7 days, today on the right; filled = worked out that day.
+    Widget dot(int ago) {
+      final d = DateTime(now.year, now.month, now.day - ago);
+      final done = app.log.containsKey(dayKey(d));
+      return Container(
+        width: 30,
+        height: 30,
+        margin: const EdgeInsets.only(right: 6),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: done ? brandGradient : null,
+          color: done ? null : scheme.surfaceContainerHighest,
+          border: ago == 0 ? Border.all(color: pink, width: 2) : null,
+        ),
+        child: Text(
+          'MTWTFSS'[d.weekday - 1],
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: done ? Colors.white : muted(context),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        summary,
+        const SizedBox(height: 10),
+        Row(children: [for (var i = 6; i >= 0; i--) dot(i)]),
+      ],
     );
   }
 

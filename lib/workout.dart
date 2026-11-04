@@ -127,7 +127,7 @@ Segment? _gap(Workout w, int round, (int, int) next) {
 String fmt(int s) =>
     '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
 
-// Workout log: local date ('2026-11-03') -> seconds of finished workouts.
+// Workout log: local date ('2026-11-03') -> seconds worked, ended early or not.
 String dayKey(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 

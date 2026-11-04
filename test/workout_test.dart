@@ -93,4 +93,17 @@ void main() {
     expect(streak(log, DateTime(2026, 3, 3)), 0); // missed yesterday
     expect(weekSecs({...log, '2026-02-23': 60}, today), 180); // 8 days ago
   });
+
+  test('time done when ending early skips Get Ready', () {
+    const w = Workout(
+      work: 30,
+      rest: 10,
+      exercises: ['', ''],
+      rounds: 1,
+      reset: 0,
+    );
+    final e = TimerEngine(buildPlan(w, ready: 5), Duration.zero);
+    expect(w.totalSecs - e.totalLeft(const Duration(seconds: 3)), lessThan(1));
+    expect(w.totalSecs - e.totalLeft(const Duration(seconds: 25)), 20);
+  });
 }

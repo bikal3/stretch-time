@@ -241,6 +241,9 @@ class _RunScreenState extends State<RunScreen> {
     );
     if (!mounted) return;
     if (stop == true) {
+      // Credit the time actually done; negative while still in Get Ready.
+      final secs = w.totalSecs - engine.totalLeft(now);
+      if (secs > 0) widget.app.logRun(secs);
       Navigator.pop(context);
       return;
     }
