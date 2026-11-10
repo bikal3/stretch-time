@@ -7,7 +7,8 @@ import 'workout.dart';
 
 class Settings {
   final bool sound, vibration, voice, keepAwake;
-  final int readySecs;
+  final bool reminder;
+  final int readySecs, reminderMins; // reminderMins: minutes after midnight
   final String themeMode; // 'system' | 'light' | 'dark'
   const Settings({
     this.sound = true,
@@ -16,6 +17,8 @@ class Settings {
     this.keepAwake = true,
     this.readySecs = 5,
     this.themeMode = 'system',
+    this.reminder = false,
+    this.reminderMins = 480,
   });
 
   Settings copyWith({
@@ -25,6 +28,8 @@ class Settings {
     bool? keepAwake,
     int? readySecs,
     String? themeMode,
+    bool? reminder,
+    int? reminderMins,
   }) => Settings(
     sound: sound ?? this.sound,
     vibration: vibration ?? this.vibration,
@@ -32,6 +37,8 @@ class Settings {
     keepAwake: keepAwake ?? this.keepAwake,
     readySecs: readySecs ?? this.readySecs,
     themeMode: themeMode ?? this.themeMode,
+    reminder: reminder ?? this.reminder,
+    reminderMins: reminderMins ?? this.reminderMins,
   );
 
   Map<String, dynamic> toJson() => {
@@ -41,6 +48,8 @@ class Settings {
     'keepAwake': keepAwake,
     'readySecs': readySecs,
     'themeMode': themeMode,
+    'reminder': reminder,
+    'reminderMins': reminderMins,
   };
 
   factory Settings.fromJson(Map<String, dynamic> j) => Settings(
@@ -50,6 +59,8 @@ class Settings {
     keepAwake: j['keepAwake'] ?? true,
     readySecs: j['readySecs'] ?? 5,
     themeMode: j['themeMode'] ?? 'system',
+    reminder: j['reminder'] ?? false,
+    reminderMins: j['reminderMins'] ?? 480,
   );
 }
 
