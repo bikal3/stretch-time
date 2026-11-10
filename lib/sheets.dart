@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'app_state.dart';
 import 'postures.dart';
+import 'reminder.dart';
 import 'run_screen.dart';
 import 'workout.dart';
 
@@ -606,6 +607,56 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
               ]),
+              if (remindersSupported)
+                _group(context, 'Reminder', [
+                  toggle(
+                    Icons.notifications_outlined,
+                    'Daily reminder',
+                    'Skipped on days you have already stretched',
+                    s.reminder,
+                    (v) async {
+                      if (v && !await requestReminderPermission()) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Notifications are turned off for StretchTime in system settings',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      set(app.settings.copyWith(reminder: v));
+                    },
+                  ),
+                  if (s.reminder)
+                    ListTile(
+                      leading: const Icon(Icons.schedule),
+                      title: const Text('Remind me at'),
+                      trailing: Text(
+                        TimeOfDay(
+                          hour: s.reminderMins ~/ 60,
+                          minute: s.reminderMins % 60,
+                        ).format(context),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      onTap: () async {
+                        final t = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay(
+                            hour: s.reminderMins ~/ 60,
+                            minute: s.reminderMins % 60,
+                          ),
+                        );
+                        if (t == null) return;
+                        set(
+                          app.settings.copyWith(
+                            reminderMins: t.hour * 60 + t.minute,
+                          ),
+                        );
+                      },
+                    ),
+                ]),
             ],
           );
         },

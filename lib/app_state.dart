@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'reminder.dart';
 import 'workout.dart';
 
 class Settings {
@@ -139,10 +140,12 @@ class AppState extends ChangeNotifier {
     final day = dayKey(DateTime.now());
     log = {...log, day: (log[day] ?? 0) + secs};
     _write('log', log);
+    syncReminder(settings, log); // today is done: skip today's reminder
   }
 
   void updateSettings(Settings s) {
     settings = s;
     _write('settings', settings);
+    syncReminder(settings, log);
   }
 }
