@@ -4,6 +4,10 @@ class Workout {
   final String name;
   final int work, rest, rounds, reset; // seconds, except rounds
   final List<String> exercises; // one entry per exercise, '' = unnamed
+  /// Per exercise: true = held on the left, then the right. May be shorter
+  /// than [exercises] (old saved data); missing entries are false.
+  final List<bool> sided;
+
   /// true (default): every exercise once per round, then repeat (1,2,3…,1,2,3…).
   /// false: each exercise for all its rounds, then the next (1,1,1,2,2,2…).
   final bool circuit;
@@ -13,6 +17,7 @@ class Workout {
     required this.work,
     required this.rest,
     required this.exercises,
+    this.sided = const [],
     required this.rounds,
     required this.reset,
     this.circuit = true,
@@ -25,13 +30,16 @@ class Workout {
     return n.isEmpty ? 'Exercise ${i + 1}' : n;
   }
 
+  bool isSided(int i) => i < sided.length && sided[i];
+
   bool get hasNames => exercises.any((e) => e.trim().isNotEmpty);
 
   int get totalSecs => buildPlan(this).fold(0, (s, p) => s + p.secs);
 
-  /// Grows/shrinks the exercise list, keeping existing names.
+  /// Grows/shrinks the exercise list, keeping existing names and sides.
   Workout withCount(int n) => copyWith(
     exercises: List.generate(n, (i) => i < count ? exercises[i] : ''),
+    sided: List.generate(n, isSided),
   );
 
   Workout copyWith({
@@ -39,6 +47,7 @@ class Workout {
     int? work,
     int? rest,
     List<String>? exercises,
+    List<bool>? sided,
     int? rounds,
     int? reset,
     bool? circuit,
@@ -47,6 +56,7 @@ class Workout {
     work: work ?? this.work,
     rest: rest ?? this.rest,
     exercises: exercises ?? this.exercises,
+    sided: sided ?? this.sided,
     rounds: rounds ?? this.rounds,
     reset: reset ?? this.reset,
     circuit: circuit ?? this.circuit,
@@ -57,6 +67,7 @@ class Workout {
     'work': work,
     'rest': rest,
     'exercises': exercises,
+    'sided': sided,
     'rounds': rounds,
     'reset': reset,
     'circuit': circuit,
@@ -67,6 +78,7 @@ class Workout {
     work: j['work'],
     rest: j['rest'],
     exercises: List<String>.from(j['exercises']),
+    sided: List<bool>.from(j['sided'] ?? const []),
     rounds: j['rounds'],
     reset: j['reset'],
     circuit: j['circuit'] ?? true,
@@ -79,7 +91,9 @@ class Workout {
       rounds == o.rounds &&
       reset == o.reset &&
       circuit == o.circuit &&
-      exercises.join('\n') == o.exercises.join('\n');
+      exercises.join('\n') == o.exercises.join('\n') &&
+      [for (var i = 0; i < count; i++) isSided(i)].join() ==
+          [for (var i = 0; i < o.count; i++) o.isSided(i)].join();
 
   String get summary =>
       '${fmt(work)} work · ${fmt(rest)} rest · $count ex · ${rounds}x';
@@ -90,12 +104,20 @@ enum Phase { ready, work, rest, reset }
 class Segment {
   final Phase phase;
   final int secs, round, exercise; // round 1-based, exercise 0-based
-  const Segment(this.phase, this.secs, this.round, this.exercise);
+  final int side; // 0 = not sided, 1 = left, 2 = right
+  const Segment(
+    this.phase,
+    this.secs,
+    this.round,
+    this.exercise, [
+    this.side = 0,
+  ]);
 }
 
 /// Rest sits between sets and, in circuit mode, Round Reset between rounds;
 /// never after the last set. A Rest/Reset segment's [round] and [exercise]
-/// are those of the set coming next.
+/// are those of the set coming next. A both-sides exercise is two work
+/// segments, left then right, with nothing between.
 List<Segment> buildPlan(Workout w, {int ready = 0}) {
   final sets = w.circuit
       ? [
@@ -109,7 +131,8 @@ List<Segment> buildPlan(Workout w, {int ready = 0}) {
   return [
     if (ready > 0) Segment(Phase.ready, ready, 1, 0),
     for (var i = 0; i < sets.length; i++) ...[
-      Segment(Phase.work, w.work, sets[i].$1, sets[i].$2),
+      for (final side in w.isSided(sets[i].$2) ? const [1, 2] : const [0])
+        Segment(Phase.work, w.work, sets[i].$1, sets[i].$2, side),
       if (i < sets.length - 1) ?_gap(w, sets[i].$1, sets[i + 1]),
     ],
   ];
@@ -149,6 +172,15 @@ int streak(Map<String, int> log, DateTime today) {
 int weekSecs(Map<String, int> log, DateTime today) =>
     [for (var i = 0; i < 7; i++) log[dayKey(_daysAgo(today, i))] ?? 0]
         .fold(0, (a, b) => a + b);
+
+/// When the next daily reminder is due: today at [mins] past midnight, or
+/// tomorrow if that has passed or today's workout is already done.
+DateTime nextReminder(DateTime now, int mins, bool doneToday) {
+  DateTime at(int day) =>
+      DateTime(now.year, now.month, day, mins ~/ 60, mins % 60);
+  final today = at(now.day);
+  return doneToday || !today.isAfter(now) ? at(now.day + 1) : today;
+}
 
 /// Time is derived from timestamps, not tick counts, so a throttled or
 /// backgrounded app never drifts; [update] just catches up.
@@ -232,6 +264,7 @@ const presets = [
       'Hip flexor lunge',
       "Child's pose",
     ],
+    sided: [true, false, false, true, false, true, true, false],
   ),
   Workout(
     name: 'Desk Break',
@@ -247,6 +280,7 @@ const presets = [
       'Upper back stretch',
       'Calf raises',
     ],
+    sided: [true, false, true, true, false, false],
   ),
   Workout(
     name: 'Full Body Stretch',
@@ -266,6 +300,7 @@ const presets = [
       'Quad stretch',
       'Calf stretch',
     ],
+    sided: [true, true, false, false, false, true, false, true, true, true],
   ),
   Workout(
     name: 'Bedtime Wind-Down',
@@ -280,6 +315,7 @@ const presets = [
       'Legs up the wall',
       'Reclined butterfly',
     ],
+    sided: [false, true, false, false, false],
   ),
   Workout(
     name: 'HIIT 30/15',

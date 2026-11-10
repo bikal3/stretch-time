@@ -43,9 +43,10 @@ void main() {
   });
 
   test('rest segment points at the next exercise', () {
+    // The first stretch is both-sides: left, right, then the rest.
     final p = buildPlan(presets.first);
-    expect(p[1].phase, Phase.rest);
-    expect(p[1].exercise, 1);
+    expect(p[2].phase, Phase.rest);
+    expect(p[2].exercise, 1);
   });
 
   test('engine counts down, catches up, pauses, skips, goes back', () {
@@ -128,5 +129,85 @@ void main() {
       'assets/postures/quad-stretch-wrong.jpg',
     );
     expect(postureImage('Butterfly'), isNull);
+  });
+
+  test('a both-sides stretch runs left then right with no rest between', () {
+    const w = Workout(
+      work: 30,
+      rest: 10,
+      exercises: ['Quad stretch', 'Butterfly'],
+      sided: [true, false],
+      rounds: 2,
+      reset: 20,
+    );
+    final p = buildPlan(w);
+    expect(
+      [for (final s in p) (s.phase, s.exercise, s.side)],
+      [
+        (Phase.work, 0, 1), (Phase.work, 0, 2), (Phase.rest, 1, 0), //
+        (Phase.work, 1, 0), (Phase.reset, 0, 0),
+        (Phase.work, 0, 1), (Phase.work, 0, 2), (Phase.rest, 1, 0),
+        (Phase.work, 1, 0),
+      ],
+    );
+    expect(w.totalSecs, 6 * 30 + 2 * 10 + 20);
+    final each = buildPlan(w.copyWith(circuit: false))
+        .where((s) => s.phase == Phase.work);
+    expect(
+      [for (final s in each) (s.exercise, s.round, s.side)],
+      [(0, 1, 1), (0, 1, 2), (0, 2, 1), (0, 2, 2), (1, 1, 0), (1, 2, 0)],
+    );
+  });
+
+  test('sided survives save/load, resizing, and old data', () {
+    const w = Workout(
+      work: 30,
+      rest: 10,
+      exercises: ['a', 'b'],
+      sided: [false, true],
+      rounds: 1,
+      reset: 0,
+    );
+    expect(Workout.fromJson(w.toJson()).isSided(1), isTrue);
+    expect(Workout.fromJson(w.toJson()..remove('sided')).isSided(1), isFalse);
+    expect(w.withCount(3).sided, [false, true, false]);
+    expect(w.withCount(1).sided, [false]);
+    expect(w.sameAs(w.copyWith(sided: [false, false])), isFalse);
+    expect(w.sameAs(w.copyWith(sided: [false, true])), isTrue);
+  });
+
+  test('presets mark exactly the one-sided stretches', () {
+    const expected = {
+      'Neck stretch', 'Neck tilt', 'Side bend', 'Quad stretch',
+      'Hip flexor lunge', 'Triceps stretch', 'Wrist stretch', 'Seated twist',
+      'Hamstring stretch', 'Pigeon pose', 'Calf stretch', 'Supine twist', //
+    };
+    for (final w in presets) {
+      for (var i = 0; i < w.count; i++) {
+        expect(
+          w.isSided(i),
+          expected.contains(w.exercises[i]),
+          reason: '${w.name}: ${w.exercises[i]}',
+        );
+      }
+    }
+  });
+
+  test('next reminder is today if still ahead and not done, else tomorrow', () {
+    final morning = DateTime(2026, 2, 28, 7);
+    expect(nextReminder(morning, 480, false), DateTime(2026, 2, 28, 8));
+    expect(nextReminder(morning, 480, true), DateTime(2026, 3, 1, 8));
+    expect(
+      nextReminder(DateTime(2026, 2, 28, 21), 480, false),
+      DateTime(2026, 3, 1, 8),
+    );
+    expect(
+      nextReminder(DateTime(2026, 2, 28, 8), 480, false),
+      DateTime(2026, 3, 1, 8),
+    );
+    expect(
+      nextReminder(morning, 23 * 60 + 45, false),
+      DateTime(2026, 2, 28, 23, 45),
+    );
   });
 }
