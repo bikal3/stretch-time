@@ -370,19 +370,31 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
     super.dispose();
   }
 
+  late final List<bool> sided = [
+    for (var i = 0; i < widget.app.current.count; i++)
+      widget.app.current.isSided(i),
+  ];
+
   void save() => widget.app.edit(
-    widget.app.current.copyWith(exercises: [for (final c in ctrls) c.text]),
+    widget.app.current.copyWith(
+      exercises: [for (final c in ctrls) c.text],
+      sided: [...sided],
+    ),
   );
 
   void add() {
     if (ctrls.length >= 99) return;
-    setState(() => ctrls.add(TextEditingController()));
+    setState(() {
+      ctrls.add(TextEditingController());
+      sided.add(false);
+    });
     save();
   }
 
   void remove(int i) {
     if (ctrls.length <= 1) return;
     final c = ctrls.removeAt(i);
+    sided.removeAt(i);
     setState(() {});
     // The TextField still holds it until this frame rebuilds.
     WidgetsBinding.instance.addPostFrameCallback((_) => c.dispose());
@@ -406,7 +418,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Name each stretch so the timer can show and say it. Hold and drag to reorder.',
+                    'Name each stretch so the timer can show and say it. Tap ⇄ for both sides. Hold and drag to reorder.',
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -427,7 +439,10 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
               padding: const EdgeInsets.only(bottom: 96),
               itemCount: ctrls.length,
               onReorderItem: (from, to) {
-                setState(() => ctrls.insert(to, ctrls.removeAt(from)));
+                setState(() {
+                  ctrls.insert(to, ctrls.removeAt(from));
+                  sided.insert(to, sided.removeAt(from));
+                });
                 save();
               },
               itemBuilder: (context, i) => ListTile(
@@ -442,10 +457,27 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                   ),
                   onChanged: (_) => save(),
                 ),
-                trailing: IconButton(
-                  tooltip: 'Remove',
-                  onPressed: ctrls.length > 1 ? () => remove(i) : null,
-                  icon: const Icon(Icons.delete_outline),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: 'Both sides',
+                      isSelected: sided[i],
+                      color: sided[i]
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).disabledColor,
+                      onPressed: () {
+                        setState(() => sided[i] = !sided[i]);
+                        save();
+                      },
+                      icon: const Icon(Icons.swap_horiz),
+                    ),
+                    IconButton(
+                      tooltip: 'Remove',
+                      onPressed: ctrls.length > 1 ? () => remove(i) : null,
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ],
                 ),
               ),
             ),
