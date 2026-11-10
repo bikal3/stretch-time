@@ -55,24 +55,30 @@ stretched. Android and iOS only.
   switch stays off and a snackbar says notifications are disabled for the
   app.
 
-### Scheduling — new `lib/reminder.dart`
-- `DateTime nextReminder(DateTime now, int mins, bool doneToday)` — pure:
-  today at `mins` if that is still ahead and `doneToday` is false, otherwise
-  tomorrow at `mins`.
-- `Future<void> syncReminder(Settings s, Map<String, int> log)`: cancels the
-  existing notification; if `s.reminder`, schedules one daily-repeating
-  notification starting at `nextReminder(...)`. No-op on web.
-- Called at app start, from `updateSettings`, and from `logRun`.
+### Scheduling — `lib/workout.dart` (pure part), new `lib/reminder.dart`
+- `DateTime nextReminder(DateTime now, int mins, bool doneToday)` in
+  `workout.dart` — pure: today at `mins` if that is still ahead and
+  `doneToday` is false, otherwise tomorrow at `mins`.
+- `Future<void> syncReminder(Settings s, Map<String, int> log)`: cancels all
+  pending notifications; if `s.reminder`, schedules one one-shot notification
+  per day for the next 30 days, starting at `nextReminder(...)`. No-op on web.
+  One-shots rather than a repeating notification, because a repeating one on
+  iOS matches on time of day only and cannot skip today. The app re-syncs on
+  every start, so reminders only stop after 30 days without opening it.
+- Called at app start, from `updateSettings`, and from `logRun`. Calls are
+  queued so a quick off/on cannot interleave.
 - Text: title "Time to stretch", body "Keep your streak going".
 - Inexact scheduling on Android (no exact-alarm permission); it may arrive a
   few minutes late.
 - Tapping the notification opens the app on the home screen.
 
 ### Platform
-- Packages: `flutter_local_notifications`, `timezone`, `flutter_timezone`.
-- Android: `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED` permissions, the
-  plugin's scheduled-notification and boot receivers in the manifest, core
-  library desugaring in `android/app/build.gradle.kts`.
+- Packages: `flutter_local_notifications`, `timezone` (times are scheduled as
+  UTC instants, so no device time-zone lookup is needed).
+- Android: `RECEIVE_BOOT_COMPLETED` permission, the plugin's
+  scheduled-notification and boot receivers in the manifest, core library
+  desugaring in `android/app/build.gradle.kts`, a monochrome status-bar icon
+  `ic_stat_reminder`.
 - iOS: permission is requested from Dart; no Info.plist change.
 
 ## Testing
