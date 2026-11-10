@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.retry.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
@@ -34,4 +34,9 @@ jobs:
         with:
           path: build/web
       - id: deployment
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+      # Pages sometimes hangs in syncing_files until it times out; try once more.
+      - id: retry
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v5
