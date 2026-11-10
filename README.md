@@ -18,8 +18,10 @@ Interval timer for stretching and workouts — one Flutter codebase for Android,
 - Work / Rest / Exercises / Rounds / Round Reset timer
 - Name each stretch; the timer shows and announces the current and next one
 - A posture picture and form tips (ⓘ) for every built-in stretch
+- Both-sides stretches: left, a "Switch sides" cue, then right
 - Streak, a week of day dots, and minutes in the last 7 days
 - Voice cues, beeps and vibration that mix with your music
+- Daily reminder on Android and iPhone, skipped once you've stretched
 - Built-in presets, saved workouts and recent history
 - Light, dark or system theme
 - Desktop web layout with keyboard shortcuts: Space pause, ← → back/skip, Esc end
@@ -69,4 +71,5 @@ App icons come from `assets/icon.png`; regenerate with `dart run flutter_launche
 - `lib/app_state.dart` — settings, saved & recent workouts (persisted with shared_preferences)
 - `lib/main.dart` — home screen (phone and desktop layouts), theme
 - `lib/run_screen.dart` — running timer, voice/sound/vibration cues
+- `lib/reminder.dart` — daily reminder notifications
 - `lib/sheets.dart` — value editor, presets sheet, exercises editor, settings
