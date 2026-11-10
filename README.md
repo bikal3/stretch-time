@@ -63,7 +63,7 @@ flutter install --release
 flutter build ios --release && xcrun devicectl device install app --device <UDID> build/ios/iphoneos/Runner.app
 ```
 
-App icons come from `assets/icon.png`; regenerate with `dart run flutter_launcher_icons`.
+App icons come from `assets/icon.png`; to regenerate, add `flutter_launcher_icons` back as a dev dependency and run `dart run flutter_launcher_icons`.
 
 ## Code
 

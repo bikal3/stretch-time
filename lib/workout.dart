@@ -34,6 +34,11 @@ class Workout {
 
   bool get hasNames => exercises.any((e) => e.trim().isNotEmpty);
 
+  String get title => name.isEmpty ? 'Custom workout' : name;
+
+  String get exerciseNames =>
+      [for (var i = 0; i < count; i++) exerciseName(i)].join(' · ');
+
   int get totalSecs => buildPlan(this).fold(0, (s, p) => s + p.secs);
 
   /// Grows/shrinks the exercise list, keeping existing names and sides.
@@ -150,11 +155,13 @@ Segment? _gap(Workout w, int round, (int, int) next) {
 String fmt(int s) =>
     '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
 
+String plural(int n, String word) => '$n $word${n == 1 ? '' : 's'}';
+
 // Workout log: local date ('2026-11-03') -> seconds worked, ended early or not.
 String dayKey(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-DateTime _daysAgo(DateTime today, int n) =>
+DateTime daysAgo(DateTime today, int n) =>
     DateTime(today.year, today.month, today.day - n);
 
 /// Consecutive days with a workout, ending today, or ending yesterday so the
@@ -162,7 +169,7 @@ DateTime _daysAgo(DateTime today, int n) =>
 int streak(Map<String, int> log, DateTime today) {
   final from = log.containsKey(dayKey(today)) ? 0 : 1;
   var n = 0;
-  while (log.containsKey(dayKey(_daysAgo(today, from + n)))) {
+  while (log.containsKey(dayKey(daysAgo(today, from + n)))) {
     n++;
   }
   return n;
@@ -170,7 +177,7 @@ int streak(Map<String, int> log, DateTime today) {
 
 /// Seconds worked over the last 7 days, today included.
 int weekSecs(Map<String, int> log, DateTime today) =>
-    [for (var i = 0; i < 7; i++) log[dayKey(_daysAgo(today, i))] ?? 0]
+    [for (var i = 0; i < 7; i++) log[dayKey(daysAgo(today, i))] ?? 0]
         .fold(0, (a, b) => a + b);
 
 /// When the next daily reminder is due: today at [mins] past midnight, or

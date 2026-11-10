@@ -41,7 +41,6 @@ ThemeData buildTheme(Brightness b) => ThemeData(
 
 const pink = Color(0xFFF5435A);
 const darkRed = Color(0xFF6B1420);
-const tabular = [FontFeature.tabularFigures()];
 const brandGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
@@ -98,8 +97,6 @@ const tones = {
 };
 
 Color muted(BuildContext c) => Theme.of(c).colorScheme.onSurfaceVariant;
-
-String plural(int n, String word) => '$n $word${n == 1 ? '' : 's'}';
 
 class HomeScreen extends StatelessWidget {
   final AppState app;
@@ -166,7 +163,7 @@ class HomeScreen extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     // Last 7 days, today on the right; filled = worked out that day.
     Widget dot(int ago) {
-      final d = DateTime(now.year, now.month, now.day - ago);
+      final d = daysAgo(now, ago);
       final done = app.log.containsKey(dayKey(d));
       return Container(
         width: 30,
@@ -409,10 +406,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                       Text(
                         w.hasNames
-                            ? [
-                                for (var i = 0; i < w.count; i++)
-                                  w.exerciseName(i),
-                              ].join(' · ')
+                            ? w.exerciseNames
                             : 'Tap to name your stretches',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -468,7 +462,7 @@ class HomeScreen extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                w.name.isEmpty ? 'Custom workout' : w.name,
+                w.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -615,7 +609,7 @@ class HomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                w.name.isEmpty ? 'Custom workout' : w.name,
+                w.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -628,8 +622,7 @@ class HomeScreen extends StatelessWidget {
                 height: 36,
                 child: Text(
                   w.hasNames
-                      ? [for (var i = 0; i < w.count; i++) w.exerciseName(i)]
-                            .join(' · ')
+                      ? w.exerciseNames
                       : '${plural(w.count, 'exercise')} · ${fmt(w.work)} work / ${fmt(w.rest)} rest',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

@@ -9,7 +9,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'app_state.dart';
 import 'postures.dart';
-import 'sheets.dart' show isWide, showPostureInfo;
+import 'sheets.dart' show isWide, showPostureInfo, tabular;
 import 'web_cues.dart' if (dart.library.js_interop) 'web_cues_web.dart';
 import 'workout.dart';
 
@@ -55,17 +55,15 @@ class Cues {
     AudioPlayer.global.setAudioContext(
       AudioContextConfig(focus: AudioContextConfigFocus.mixWithOthers).build(),
     );
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+    _tts.setSpeechRate(kIsWeb ? 1.0 : 0.5);
+    if (isIOS) {
       _tts.setIosAudioCategory(IosTextToSpeechAudioCategory.playback, [
         IosTextToSpeechAudioCategoryOptions.mixWithOthers,
         IosTextToSpeechAudioCategoryOptions.duckOthers,
       ]);
-    }
-    _tts.setSpeechRate(kIsWeb ? 1.0 : 0.5);
-    // iOS suspends a backgrounded app, which would silence the cues while the
-    // phone is locked. Looping silence (with the `audio` background mode in
-    // Info.plist) keeps it running for the length of the workout.
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      // iOS suspends a backgrounded app, which would silence the cues while
+      // the phone is locked. Looping silence (with the `audio` background mode
+      // in Info.plist) keeps it running for the length of the workout.
       _keepAlive.setReleaseMode(ReleaseMode.loop);
       _keepAlive.play(AssetSource('silence.wav'));
     }
@@ -308,7 +306,7 @@ class _RunScreenState extends State<RunScreen> {
         style: const TextStyle(
           fontSize: 150,
           fontWeight: FontWeight.w800,
-          fontFeatures: [FontFeature.tabularFigures()],
+          fontFeatures: tabular,
         ),
       ),
     );
@@ -414,7 +412,7 @@ class _RunScreenState extends State<RunScreen> {
                       '${fmt(engine.totalLeft(t))} remaining',
                       style: const TextStyle(
                         color: Colors.white70,
-                        fontFeatures: [FontFeature.tabularFigures()],
+                        fontFeatures: tabular,
                       ),
                     ),
                     const SizedBox(height: 28),
@@ -517,7 +515,7 @@ class _RunScreenState extends State<RunScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${fmt(w.totalSecs)} · ${w.count} exercise${w.count == 1 ? '' : 's'} · ${w.rounds} round${w.rounds == 1 ? '' : 's'}',
+                    '${fmt(w.totalSecs)} · ${plural(w.count, 'exercise')} · ${plural(w.rounds, 'round')}',
                     style: const TextStyle(fontSize: 18),
                   ),
                   if (streak(widget.app.log, DateTime.now()) case final d

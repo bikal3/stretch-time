@@ -1,9 +1,7 @@
 // Form tips and posture images for the built-in stretches. Pure Dart.
 //
-// Images live in assets/postures/, named after the exercise:
-//   quad-stretch.png        correct posture, shown on the timer
-//   quad-stretch-wrong.png  common mistake, shown in the info sheet
-// .jpg and .webp work too. A missing image just isn't shown.
+// Images live in assets/postures/, named after the exercise
+// (quad-stretch.png). A missing image just isn't shown.
 
 /// Every bundled asset path; filled from the asset manifest at startup.
 Set<String> assetPaths = {};
@@ -15,12 +13,9 @@ String slug(String exercise) => exercise
     .replaceAll("'", '')
     .replaceAll(RegExp(r'[^a-z0-9]+'), '-');
 
-String? postureImage(String exercise, {bool wrong = false}) {
-  final base = 'assets/postures/${slug(exercise)}${wrong ? '-wrong' : ''}';
-  for (final ext in ['png', 'jpg', 'jpeg', 'webp']) {
-    if (assetPaths.contains('$base.$ext')) return '$base.$ext';
-  }
-  return null;
+String? postureImage(String exercise) {
+  final path = 'assets/postures/${slug(exercise)}.png';
+  return assetPaths.contains(path) ? path : null;
 }
 
 List<String>? tipsFor(String exercise) =>

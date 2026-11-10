@@ -8,7 +8,7 @@ import 'reminder.dart';
 import 'run_screen.dart';
 import 'workout.dart';
 
-const _tabular = [FontFeature.tabularFigures()];
+const tabular = [FontFeature.tabularFigures()];
 
 /// − / + button: tap steps once, hold repeats.
 class RepeatButton extends StatefulWidget {
@@ -147,7 +147,7 @@ void showValueEditor(
                         fontSize: 56,
                         fontWeight: FontWeight.w700,
                         color: color,
-                        fontFeatures: _tabular,
+                        fontFeatures: tabular,
                       ),
                     ),
                     RepeatButton(Icons.add, 'Increase', () => stepBy(1)),
@@ -204,7 +204,7 @@ void showWorkouts(BuildContext context, AppState app) {
         builder: (context, _) {
           Widget tile(Workout w, {VoidCallback? onDelete}) {
             final t = ListTile(
-              title: Text(w.name.isEmpty ? 'Custom workout' : w.name),
+              title: Text(w.title),
               subtitle: Text(w.summary),
               onTap: () {
                 app.load(w);
@@ -215,7 +215,7 @@ void showWorkouts(BuildContext context, AppState app) {
                 children: [
                   Text(
                     fmt(w.totalSecs),
-                    style: const TextStyle(fontFeatures: _tabular),
+                    style: const TextStyle(fontFeatures: tabular),
                   ),
                   IconButton(
                     tooltip: 'Start now',
@@ -692,45 +692,12 @@ class SettingsScreen extends StatelessWidget {
       );
 }
 
-/// Posture images (when bundled) and form tips for one exercise.
+/// Posture image (when bundled) and form tips for one exercise.
 void showPostureInfo(BuildContext context, String name, List<String> tips) {
-  final right = postureImage(name), wrong = postureImage(name, wrong: true);
+  final image = postureImage(name);
   showPanel(
     context,
     builder: (context) {
-      Widget side(String path, IconData icon, Color c, String label) =>
-          Expanded(
-            child: Column(
-              children: [
-                // White behind line art, so it shows in dark mode too.
-                Container(
-                  height: 240,
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Image.asset(path, fit: BoxFit.contain),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(icon, color: c, size: 20),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        label,
-                        style: TextStyle(color: c, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-
       // Scrolls on short phones, where the sheet is capped below full height.
       return SafeArea(
         child: SingleChildScrollView(
@@ -742,27 +709,17 @@ void showPostureInfo(BuildContext context, String name, List<String> tips) {
               children: [
                 Text(name, style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 16),
-                if (right != null || wrong != null) ...[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (right != null)
-                        side(
-                          right,
-                          Icons.check_circle_rounded,
-                          const Color(0xFF1E9E5A),
-                          'Correct',
-                        ),
-                      if (right != null && wrong != null)
-                        const SizedBox(width: 12),
-                      if (wrong != null)
-                        side(
-                          wrong,
-                          Icons.cancel_rounded,
-                          const Color(0xFFE5484D),
-                          'Common mistake',
-                        ),
-                    ],
+                if (image != null) ...[
+                  // White behind line art, so it shows in dark mode too.
+                  Container(
+                    height: 240,
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Image.asset(image, fit: BoxFit.contain),
                   ),
                   const SizedBox(height: 16),
                 ],

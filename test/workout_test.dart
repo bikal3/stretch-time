@@ -118,16 +118,9 @@ void main() {
     expect(slug(" Child's pose "), 'childs-pose');
   });
 
-  test('posture images are found by exercise name and type', () {
-    assetPaths = {
-      'assets/postures/quad-stretch.png',
-      'assets/postures/quad-stretch-wrong.jpg',
-    };
+  test('posture images are found by exercise name', () {
+    assetPaths = {'assets/postures/quad-stretch.png'};
     expect(postureImage('Quad stretch'), 'assets/postures/quad-stretch.png');
-    expect(
-      postureImage('Quad stretch', wrong: true),
-      'assets/postures/quad-stretch-wrong.jpg',
-    );
     expect(postureImage('Butterfly'), isNull);
   });
 
