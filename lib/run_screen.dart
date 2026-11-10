@@ -25,6 +25,7 @@ const phaseLabels = {
   Phase.rest: 'Rest',
   Phase.reset: 'Round Reset',
 };
+const sideLabels = ['', ' · Left', ' · Right']; // by Segment.side
 
 /// Brighter phase colors for the dark lock-screen card.
 const liveColors = {
@@ -150,7 +151,11 @@ class _RunScreenState extends State<RunScreen> {
 
   String speechFor(Segment seg) => switch (seg.phase) {
     Phase.ready => 'Get ready. First, ${w.exerciseName(0)}',
-    Phase.work => w.hasNames ? w.exerciseName(seg.exercise) : 'Work',
+    Phase.work => switch (seg.side) {
+      2 => 'Switch sides',
+      1 => '${w.hasNames ? w.exerciseName(seg.exercise) : 'Work'}, left side',
+      _ => w.hasNames ? w.exerciseName(seg.exercise) : 'Work',
+    },
     Phase.rest => 'Rest. Next, ${w.exerciseName(seg.exercise)}',
     Phase.reset => 'Round reset. Round ${seg.round} next',
   };
@@ -176,7 +181,9 @@ class _RunScreenState extends State<RunScreen> {
     final name = w.exerciseName(seg.exercise);
     liveActivity.invokeMethod('update', {
       'phase': phaseLabels[seg.phase],
-      'title': seg.phase == Phase.work ? name : 'Next: $name',
+      'title': seg.phase == Phase.work
+          ? name + sideLabels[seg.side]
+          : 'Next: $name',
       'detail':
           'Round ${seg.round}/${w.rounds} · Exercise ${seg.exercise + 1}/${w.count}',
       'color': liveColors[seg.phase],
@@ -357,7 +364,7 @@ class _RunScreenState extends State<RunScreen> {
                     const SizedBox(height: 8),
                     if (seg.phase == Phase.work)
                       Text(
-                        w.exerciseName(seg.exercise),
+                        w.exerciseName(seg.exercise) + sideLabels[seg.side],
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 34,
