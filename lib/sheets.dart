@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'app_state.dart';
@@ -495,7 +496,10 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Settings')),
+    appBar: AppBar(
+      title: const Text('Settings'),
+      leading: kIsWeb ? const CloseButton() : null,
+    ),
     body: pageBody(
       ListenableBuilder(
         listenable: app,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -114,10 +115,23 @@ class HomeScreen extends StatelessWidget {
     MaterialPageRoute(builder: (_) => RunScreen(app)),
   );
 
-  void openSettings(BuildContext context) => Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => SettingsScreen(app)),
-  );
+  // Web: centered popup. Phone apps: full page.
+  void openSettings(BuildContext context) => kIsWeb
+      ? showDialog(
+          context: context,
+          builder: (c) => Dialog(
+            clipBehavior: Clip.antiAlias,
+            child: SizedBox(
+              width: 520,
+              height: MediaQuery.sizeOf(c).height * 0.8,
+              child: SettingsScreen(app),
+            ),
+          ),
+        )
+      : Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => SettingsScreen(app)),
+        );
 
   // ---------------------------------------------------------------- shared
 
