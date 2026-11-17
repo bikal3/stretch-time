@@ -197,125 +197,159 @@ void showWorkouts(BuildContext context, AppState app) {
   showPanel(
     context,
     tall: true,
-    builder: (context) => DefaultTabController(
-      length: 3,
-      initialIndex: app.saved.isEmpty ? 0 : 1,
-      child: ListenableBuilder(
-        listenable: app,
-        builder: (context, _) {
-          Widget tile(Workout w, {VoidCallback? onDelete}) {
-            final t = ListTile(
-              title: Text(w.title),
-              subtitle: Text(w.summary),
-              onTap: () {
-                app.load(w);
-                Navigator.pop(context);
-              },
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    fmt(w.totalSecs),
-                    style: const TextStyle(fontFeatures: tabular),
-                  ),
-                  IconButton(
-                    tooltip: 'Start now',
-                    icon: const Icon(Icons.play_circle_fill_rounded, size: 34),
-                    onPressed: () {
-                      final nav = Navigator.of(context);
-                      app.load(w);
-                      nav.pop();
-                      nav.push(
-                        MaterialPageRoute(builder: (_) => RunScreen(app)),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            );
-            if (onDelete == null) return t;
-            return Dismissible(
-              key: ObjectKey(w),
-              direction: DismissDirection.endToStart,
-              background: Container(
-                color: Colors.red.shade700,
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 24),
-                child: const Icon(Icons.delete),
-              ),
-              onDismissed: (_) => onDelete(),
-              child: t,
-            );
-          }
-
-          Widget empty(String msg) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Text(
-                msg,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          );
-
-          return Column(
-            children: [
-              const TabBar(
-                tabs: [
-                  Tab(text: 'Presets'),
-                  Tab(text: 'Saved'),
-                  Tab(text: 'Recent'),
-                ],
-              ),
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    ListView(children: [for (final w in presets) tile(w)]),
-                    ListView(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: FilledButton.icon(
-                            onPressed: () => askSaveName(context, app),
-                            icon: const Icon(Icons.bookmark_add_outlined),
-                            label: const Text('Save current workout'),
-                          ),
+    // Own messenger, so the Undo snackbar shows in the panel, not behind it.
+    builder: (context) => ScaffoldMessenger(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: DefaultTabController(
+          length: 3,
+          initialIndex: app.saved.isEmpty ? 0 : 1,
+          child: ListenableBuilder(
+            listenable: app,
+            builder: (context, _) {
+              Widget tile(Workout w, {VoidCallback? onDelete}) {
+                final t = ListTile(
+                  title: Text(w.title),
+                  subtitle: Text(w.summary),
+                  onTap: () {
+                    app.load(w);
+                    Navigator.pop(context);
+                  },
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        fmt(w.totalSecs),
+                        style: const TextStyle(fontFeatures: tabular),
+                      ),
+                      IconButton(
+                        tooltip: 'Start now',
+                        icon: const Icon(
+                          Icons.play_circle_fill_rounded,
+                          size: 34,
                         ),
-                        if (app.saved.isEmpty)
-                          empty(
-                            'Nothing saved yet.\nSet up a workout, then save it here.',
-                          ),
-                        for (final w in app.saved)
-                          tile(w, onDelete: () => app.deleteSaved(w)),
-                        if (app.saved.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Text(
-                              'Swipe left to delete',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
+                        onPressed: () {
+                          final nav = Navigator.of(context);
+                          app.load(w);
+                          nav.pop();
+                          nav.push(
+                            MaterialPageRoute(builder: (_) => RunScreen(app)),
+                          );
+                        },
+                      ),
+                      // Swiping is awkward with a mouse.
+                      if (onDelete != null && isWide(context))
+                        IconButton(
+                          tooltip: 'Delete',
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          onPressed: onDelete,
+                        ),
+                    ],
+                  ),
+                );
+                if (onDelete == null) return t;
+                return Dismissible(
+                  key: ObjectKey(w),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    color: Colors.red.shade700,
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 24),
+                    child: const Icon(Icons.delete),
+                  ),
+                  onDismissed: (_) => onDelete(),
+                  child: t,
+                );
+              }
+
+              Widget empty(String msg) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(
+                    msg,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              );
+
+              return Column(
+                children: [
+                  const TabBar(
+                    tabs: [
+                      Tab(text: 'Presets'),
+                      Tab(text: 'Saved'),
+                      Tab(text: 'Recent'),
+                    ],
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        ListView(children: [for (final w in presets) tile(w)]),
+                        ListView(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: FilledButton.icon(
+                                onPressed: () => askSaveName(context, app),
+                                icon: const Icon(Icons.bookmark_add_outlined),
+                                label: const Text('Save current workout'),
                               ),
                             ),
-                          ),
+                            if (app.saved.isEmpty)
+                              empty(
+                                'Nothing saved yet.\nSet up a workout, then save it here.',
+                              ),
+                            for (final w in app.saved)
+                              tile(
+                                w,
+                                onDelete: () {
+                                  final undo = app.deleteSaved(w);
+                                  ScaffoldMessenger.of(context)
+                                    ..clearSnackBars()
+                                    ..showSnackBar(
+                                      SnackBar(
+                                        content: Text('Deleted ${w.title}'),
+                                        persist:
+                                            false, // hide after a few seconds
+                                        action: SnackBarAction(
+                                          label: 'Undo',
+                                          onPressed: undo,
+                                        ),
+                                      ),
+                                    );
+                                },
+                              ),
+                            if (app.saved.isNotEmpty && !isWide(context))
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Text(
+                                  'Swipe left to delete',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        app.recent.isEmpty
+                            ? empty('Workouts you run show up here.')
+                            : ListView(
+                                children: [for (final w in app.recent) tile(w)],
+                              ),
                       ],
                     ),
-                    app.recent.isEmpty
-                        ? empty('Workouts you run show up here.')
-                        : ListView(
-                            children: [for (final w in app.recent) tile(w)],
-                          ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     ),
   );

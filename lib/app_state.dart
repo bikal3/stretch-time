@@ -122,9 +122,15 @@ class AppState extends ChangeNotifier {
     _write('saved', saved);
   }
 
-  void deleteSaved(Workout w) {
+  /// Returns an undo that puts it back where it was.
+  VoidCallback deleteSaved(Workout w) {
+    final i = saved.indexOf(w);
     saved = saved.where((s) => s != w).toList();
     _write('saved', saved);
+    return () {
+      saved = [...saved]..insert(i.clamp(0, saved.length), w);
+      _write('saved', saved);
+    };
   }
 
   void recordRun() {
