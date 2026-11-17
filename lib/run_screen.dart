@@ -125,7 +125,8 @@ class _RunScreenState extends State<RunScreen> {
   @override
   void initState() {
     super.initState();
-    widget.app.recordRun();
+    // After the frame: notifying the app's listeners mid-build is an error.
+    WidgetsBinding.instance.addPostFrameCallback((_) => widget.app.recordRun());
     engine = TimerEngine(buildPlan(w, ready: settings.readySecs), now);
     if (settings.keepAwake) WakelockPlus.enable();
     if (isIOS) healthWorkout.invokeMethod('start');
@@ -202,7 +203,7 @@ class _RunScreenState extends State<RunScreen> {
     if (engine.done && ticker.isActive) {
       ticker.cancel();
       cues.finished();
-      widget.app.logRun(w.totalSecs);
+      widget.app.logRun(engine.spentSecs(now));
       if (isIOS) healthWorkout.invokeMethod('end', true);
     }
     final left = engine.secondsLeft(t);
@@ -247,8 +248,8 @@ class _RunScreenState extends State<RunScreen> {
     );
     if (!mounted) return;
     if (stop == true) {
-      // Credit the time actually done; negative while still in Get Ready.
-      final secs = w.totalSecs - engine.totalLeft(now);
+      // Credit the time actually done; 0 while still in Get Ready.
+      final secs = engine.spentSecs(now);
       if (secs > 0) widget.app.logRun(secs);
       Navigator.pop(context);
       return;

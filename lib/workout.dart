@@ -196,6 +196,7 @@ class TimerEngine {
   int index = 0;
   Duration _endAt;
   Duration? _pausedLeft;
+  int _spentMs = 0; // in segments already left, see spentSecs
 
   TimerEngine(this.plan, Duration now)
     : _endAt = now + Duration(seconds: plan.first.secs);
@@ -204,11 +205,21 @@ class TimerEngine {
   bool get paused => _pausedLeft != null;
   Segment get current => plan[index];
 
+  /// Time spent in the current segment; Get Ready doesn't count.
+  int _elapsedMs(Duration now) => done || current.phase == Phase.ready
+      ? 0
+      : current.secs * 1000 - msLeft(now);
+
+  /// Seconds actually worked and rested: skipped time and Get Ready
+  /// don't count, a segment restarted with [back] counts twice.
+  int spentSecs(Duration now) => ((_spentMs + _elapsedMs(now)) / 1000).round();
+
   /// Advances to [now]. Returns true if the segment changed.
   bool update(Duration now) {
     if (paused || done) return false;
     var changed = false;
     while (!done && now >= _endAt) {
+      if (current.phase != Phase.ready) _spentMs += current.secs * 1000;
       index++;
       changed = true;
       if (!done) _endAt += Duration(seconds: plan[index].secs);
@@ -234,6 +245,8 @@ class TimerEngine {
 
   void skip(Duration now) {
     if (done) return;
+    // update() below credits the whole segment; take back the unspent part.
+    if (current.phase != Phase.ready) _spentMs -= msLeft(now);
     _pausedLeft = null;
     _endAt = now;
     update(now);
@@ -244,6 +257,7 @@ class TimerEngine {
   void back(Duration now) {
     if (done) return;
     final elapsed = current.secs * 1000 - msLeft(now);
+    _spentMs += _elapsedMs(now);
     if (elapsed < 2000 && index > 0) index--;
     final full = Duration(seconds: current.secs);
     if (paused) {

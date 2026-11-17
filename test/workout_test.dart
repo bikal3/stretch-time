@@ -96,7 +96,7 @@ void main() {
     expect(weekSecs({...log, '2026-02-23': 60}, today), 180); // 8 days ago
   });
 
-  test('time done when ending early skips Get Ready', () {
+  test('time spent skips Get Ready, skipped time and pauses', () {
     const w = Workout(
       work: 30,
       rest: 10,
@@ -105,8 +105,26 @@ void main() {
       reset: 0,
     );
     final e = TimerEngine(buildPlan(w, ready: 5), Duration.zero);
-    expect(w.totalSecs - e.totalLeft(const Duration(seconds: 3)), lessThan(1));
-    expect(w.totalSecs - e.totalLeft(const Duration(seconds: 25)), 20);
+    expect(e.spentSecs(s(3)), 0); // still in Get Ready
+    e.update(s(25));
+    expect(e.spentSecs(s(25)), 20);
+    e.pause(s(25));
+    expect(e.spentSecs(s(100)), 20); // paused time doesn't count
+    e.resume(s(100));
+    e.skip(s(105)); // 25s of work skipped
+    expect(e.spentSecs(s(105)), 25);
+    e.skip(s(106)); // rest: 1s done, 9s skipped
+    e.back(s(116)); // 10s in, restart: those 10s still count
+    expect(e.spentSecs(s(116)), 36);
+    e.update(s(146));
+    expect(e.done, isTrue);
+    expect(e.spentSecs(s(146)), 66);
+    // Skipping straight through credits nothing.
+    final f = TimerEngine(buildPlan(w, ready: 5), Duration.zero);
+    while (!f.done) {
+      f.skip(Duration.zero);
+    }
+    expect(f.spentSecs(Duration.zero), 0);
   });
 
   test('every named preset exercise has form tips', () {
